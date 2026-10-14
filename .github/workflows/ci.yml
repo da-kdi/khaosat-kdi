@@ -1,0 +1,20 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test               # survey-core: logic, validation, analytics, export
+      - run: npm run test:db        # migrations + RLS/RPC checks on in-memory Postgres (PGlite)
+      - run: npm run check:core     # Edge Function copy of survey-core is in sync
+      - run: npx vite build
+      - uses: denoland/setup-deno@v2
+        with: { deno-version: v2.x }
+      - run: deno check supabase/functions/survey-public/index.ts

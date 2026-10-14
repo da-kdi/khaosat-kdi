@@ -1,0 +1,14 @@
+# Minimal Supabase CLI config. `supabase link --project-ref <ref>` fills the rest.
+project_id = "kdi-survey-stem"
+
+[functions.survey-public]
+verify_jwt = false
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+enable_signup = true
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

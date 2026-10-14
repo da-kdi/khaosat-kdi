@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* KDI brand — sampled from the official logo */
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --color-brand-50: #eef3fb;
+  --color-brand-100: #d8e3f5;
+  --color-brand-200: #b0c6ea;
+  --color-brand-300: #7c9fd7;
+  --color-brand-400: #4a76bf;
+  --color-brand-500: #2a5eab;
+  --color-brand-600: #154b98; /* logo blue */
+  --color-brand-700: #123f80;
+  --color-brand-800: #0f3366;
+  --color-brand-900: #0b264b;
+
+  --color-accent-50: #fff7eb;
+  --color-accent-100: #feebcc;
+  --color-accent-200: #fdd699;
+  --color-accent-300: #fcc266;
+  --color-accent-400: #faa934; /* logo orange */
+  --color-accent-500: #f0920f;
+  --color-accent-600: #c9740a; /* text-safe orange */
+  --color-accent-700: #9c5a08;
+
+  --color-ink: #0f1b33;
+  --color-muted: #5b6780;
+  --color-line: #e3e8f0;
+  --color-surface: #f6f8fc;
+}
+
+:root {
+  --survey-primary: #154b98;
+  --survey-accent: #faa934;
+  --survey-bg: #f6f8fc;
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-surface text-ink antialiased;
+  font-feature-settings: "ss01";
+}
+
+/* readable Vietnamese: slightly taller line-height for diacritics */
+.prose-vi { line-height: 1.7; }
+
+.focus-ring { @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500; }
+
+/* scrollbars in panels */
+.thin-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #cfd8e6; border-radius: 8px; }
+
+/* public survey uses per-survey theme variables */
+.survey-btn { background: var(--survey-primary); color: #fff; }
+.survey-btn:hover { filter: brightness(1.08); }
+.survey-accent-bg { background: var(--survey-accent); }
+.survey-primary-text { color: var(--survey-primary); }
+.survey-progress { background: linear-gradient(90deg, var(--survey-primary), var(--survey-accent)); }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: fade-in .18s ease-out; }
+
+@media print {
+  .no-print { display: none !important; }
+}
