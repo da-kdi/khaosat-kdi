@@ -89,7 +89,7 @@ export default function DistributionPage() {
         <Card className="flex flex-col items-center p-5">
           <h2 className="self-start font-semibold">Mã QR</h2>
           <div ref={qrRef} className="mt-4 rounded-xl border border-line bg-white p-3">
-            <QRCodeCanvas value={url} size={200} level="H" marginSize={1} imageSettings={{ src: '/brand/kdi-logo.png', height: 30, width: 64, excavate: true }} />
+            <QRCodeCanvas value={url} size={200} level="H" marginSize={1} imageSettings={{ src: import.meta.env.BASE_URL + 'brand/kdi-logo.png', height: 30, width: 64, excavate: true }} />
             <div className="hidden"><QRCodeSVG value={url} size={512} level="H" marginSize={2} /></div>
           </div>
           <div className="mt-4 flex gap-2"><Button size="sm" variant="outline" onClick={() => downloadQR('png')}><Download className="h-4 w-4" />PNG</Button><Button size="sm" variant="outline" onClick={() => downloadQR('svg')}><Download className="h-4 w-4" />SVG</Button></div>

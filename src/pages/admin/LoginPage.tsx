@@ -36,7 +36,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       <div className="hidden flex-1 flex-col justify-between bg-brand-700 p-10 text-white lg:flex">
-        <div className="flex items-center gap-3"><div className="rounded-lg bg-white px-3 py-2"><img src="/brand/kdi-logo.png" alt="KDI Education" className="h-8" /></div></div>
+        <div className="flex items-center gap-3"><div className="rounded-lg bg-white px-3 py-2"><img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI Education" className="h-8" /></div></div>
         <div>
           <div className="mb-5 h-1.5 w-16 rounded-full bg-accent-400" />
           <h1 className="text-4xl font-bold leading-tight">Hệ thống khảo sát STEM</h1>
@@ -46,7 +46,7 @@ export default function LoginPage() {
       </div>
       <div className="flex flex-1 items-center justify-center p-6">
         <form onSubmit={submit} className="w-full max-w-sm space-y-4">
-          <img src="/brand/kdi-logo.png" alt="KDI Education" className="h-10 lg:hidden" />
+          <img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI Education" className="h-10 lg:hidden" />
           <div>
             <h2 className="text-2xl font-bold">{mode === 'in' ? 'Đăng nhập quản trị' : 'Tạo tài khoản'}</h2>
             <p className="mt-1 text-sm text-muted">{mode === 'in' ? 'Dành cho người quản lý & phân tích khảo sát.' : 'Tài khoản đầu tiên của hệ thống sẽ là Super Admin.'}</p>

@@ -14,7 +14,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
-          <img src="/brand/kdi-logo.png" alt="KDI Education" className="h-10" />
+          <img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI Education" className="h-10" />
           <div className="hidden h-7 w-px bg-line sm:block" />
           <span className="hidden font-semibold text-brand-700 sm:block">Hệ thống khảo sát STEM</span>
         </div>

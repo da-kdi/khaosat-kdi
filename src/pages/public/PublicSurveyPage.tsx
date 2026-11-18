@@ -20,7 +20,7 @@ function Shell({ children, survey }: { children: React.ReactNode; survey?: { tit
   return (
     <div className="min-h-screen" style={themeStyle(survey?.theme)}>
       {survey ? <SurveyHeader survey={survey} /> : (
-        <header className="border-b border-black/5 bg-white"><div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3"><img src="/brand/kdi-logo.png" alt="KDI Education" className="h-9" /><div className="h-6 w-px bg-line" /><span className="text-sm font-semibold text-brand-700">Hệ thống khảo sát STEM</span></div></header>
+        <header className="border-b border-black/5 bg-white"><div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3"><img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI Education" className="h-9" /><div className="h-6 w-px bg-line" /><span className="text-sm font-semibold text-brand-700">Hệ thống khảo sát STEM</span></div></header>
       )}
       <main className="mx-auto max-w-xl px-4 py-14">{children}</main>
     </div>
@@ -171,7 +171,7 @@ function ResumeHint({ slug, token }: { slug: string; token: string }) {
 }
 function CopyResume({ slug, token }: { slug: string; token: string }) {
   const [ok, setOk] = useState(false);
-  const url = `${window.location.origin}/s/${slug}/resume?r=${encodeURIComponent(token)}`;
+  const url = `${window.location.origin}${import.meta.env.BASE_URL}s/${slug}/resume?r=${encodeURIComponent(token)}`;
   return (
     <button onClick={async () => { try { await navigator.clipboard.writeText(url); setOk(true); setTimeout(() => setOk(false), 2000); } catch { window.prompt('Sao chép link tiếp tục:', url); } }}
       className="inline-flex items-center gap-1 font-medium text-brand-700 hover:underline"><Copy className="h-3.5 w-3.5" />{ok ? 'Đã sao chép' : 'Sao chép link tiếp tục'}</button>

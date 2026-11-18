@@ -37,7 +37,7 @@ export function SurveyHeader({ survey, compact }: { survey: FormSurvey; compact?
   return (
     <header className="border-b border-black/5 bg-white/90 backdrop-blur">
       <div className={cn('mx-auto flex max-w-3xl items-center gap-3 px-4', compact ? 'py-2' : 'py-3')}>
-        <img src={t.logoUrl} alt="KDI Education" className="h-9 w-auto" onError={(e) => ((e.target as HTMLImageElement).src = '/brand/kdi-logo.png')} />
+        <img src={t.logoUrl} alt="KDI Education" className="h-9 w-auto" onError={(e) => ((e.target as HTMLImageElement).src = import.meta.env.BASE_URL + 'brand/kdi-logo.png')} />
         <div className="h-6 w-px bg-line" />
         <span className="text-sm font-semibold text-brand-700">Hệ thống khảo sát STEM</span>
       </div>

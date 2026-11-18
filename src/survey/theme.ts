@@ -11,13 +11,16 @@ export const THEME_PRESETS: Record<string, { label: string; primary: string; acc
   minimal: { label: 'Minimal', primary: '#111827', accent: '#111827', background: '#ffffff' },
 };
 
+/** Logo mặc định lưu dạng '/brand/...'; thêm base path khi app chạy ở thư mục con (GitHub Pages). */
+export const withBase = (u: string) => (u.startsWith('/brand/') ? import.meta.env.BASE_URL + u.slice(1) : u);
+
 export function resolveTheme(t: SurveyTheme = {}) {
   const base = THEME_PRESETS[t.preset ?? 'kdi'] ?? THEME_PRESETS.kdi;
   return {
     primary: t.primary || base.primary,
     accent: t.accent || base.accent,
     background: t.background || base.background,
-    logoUrl: t.logoUrl || '/brand/kdi-logo.png',
+    logoUrl: withBase(t.logoUrl || '/brand/kdi-logo.png'),
     coverUrl: t.coverUrl || '',
     font: t.font ?? 'be-vietnam',
   };

@@ -13,7 +13,7 @@ export const api: AdminApi = apis.admin;
 export const publicApi: PublicApi = apis.pub;
 
 export function publicSurveyUrl(slug: string, token?: string): string {
-  const base = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) || window.location.origin;
+  const base = (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) || window.location.origin + import.meta.env.BASE_URL;
   return `${base.replace(/\/$/, '')}/s/${slug}${token ? `?t=${encodeURIComponent(token)}` : ''}`;
 }
 

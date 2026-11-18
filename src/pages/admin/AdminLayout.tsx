@@ -22,7 +22,7 @@ export default function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-4 py-4">
-        <img src="/brand/kdi-logo.png" alt="KDI Education" className="h-8" />
+        <img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI Education" className="h-8" />
       </div>
       <p className="px-4 pb-3 text-xs font-semibold uppercase tracking-wider text-brand-700">Hệ thống khảo sát STEM</p>
       <nav className="flex-1 space-y-0.5 px-2">
@@ -36,7 +36,7 @@ export default function AdminLayout() {
       {isDemo && (
         <div className="mx-3 mb-3 rounded-lg border border-accent-200 bg-accent-50 p-3 text-xs text-accent-700">
           <b>Chế độ demo</b> · dữ liệu lưu trong trình duyệt.
-          <button onClick={() => { if (confirm('Xóa toàn bộ dữ liệu demo và tạo lại dữ liệu mẫu?')) { resetDemo(); location.href = '/admin/login'; } }} className="mt-1.5 flex items-center gap-1 font-semibold hover:underline"><RotateCcw className="h-3 w-3" />Khôi phục dữ liệu mẫu</button>
+          <button onClick={() => { if (confirm('Xóa toàn bộ dữ liệu demo và tạo lại dữ liệu mẫu?')) { resetDemo(); location.href = import.meta.env.BASE_URL + 'admin/login'; } }} className="mt-1.5 flex items-center gap-1 font-semibold hover:underline"><RotateCcw className="h-3 w-3" />Khôi phục dữ liệu mẫu</button>
         </div>
       )}
       <div className="border-t border-line p-3">
@@ -64,7 +64,7 @@ export default function AdminLayout() {
       <div className="min-w-0 flex-1">
         <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-2.5 lg:hidden">
           <button onClick={() => setOpen(!open)} className="rounded-md p-1.5 hover:bg-slate-100" aria-label="Menu">{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
-          <img src="/brand/kdi-logo.png" alt="KDI" className="h-7" />
+          <img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI" className="h-7" />
           {isDemo && <Badge tone="orange">Demo</Badge>}
         </div>
         <Outlet />

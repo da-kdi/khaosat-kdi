@@ -44,7 +44,7 @@ export function createSupabaseApis(url: string, anonKey: string): { admin: Admin
       return (await me())!;
     },
     async signUp(email, password, name) {
-      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name }, emailRedirectTo: `${location.origin}/admin/login` } });
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name }, emailRedirectTo: `${location.origin}${import.meta.env.BASE_URL}admin/login` } });
       if (error) throw new Error(error.message);
       return { needsConfirmation: !data.session };
     },
