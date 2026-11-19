@@ -1,0 +1,1075 @@
+<title>Khảo sát KDI MVP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: thanh menu ngang của hệ thống chung (giống phân hệ Nhân sự) → tiêu đề trang + nút thao tác bên phải → nội dung một cột rộng, bảng xanh tiêu đề trắng. */
+:root{
+  --bg:#f2f5fa; --surface:#ffffff; --surface-2:#f7f9fc; --line:#dbe3ee; --fg:#1b2a41; --muted:#5d6c82;
+  --brand:#154b98; --brand-2:#2f73c3; --thead:#0f6fae; --brand-soft:#e7effa; --accent:#f2a12a; --accent-soft:#fff3df;
+  --ok:#1d9560; --ok-soft:#e3f5ec; --warn:#b97c00; --warn-soft:#fff4d6; --bad:#cc4035; --bad-soft:#fde9e7;
+  --c1:#2f73c3; --c2:#f2a12a; --c3:#1d9f8f; --c4:#8a6fd1; --c5:#d0617a;
+  --font:"Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --shadow:0 6px 24px rgba(21,75,152,.12);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1520; --surface:#16202d; --surface-2:#1b2737; --line:#2a3849; --fg:#e5ecf5; --muted:#97a6ba;
+  --brand:#7fb0f0; --brand-2:#3d82cf; --thead:#1d5f93; --brand-soft:#1b2c44; --accent:#f5b14e; --accent-soft:#3a2d17;
+  --ok:#4cc48c; --ok-soft:#173528; --warn:#e2b04a; --warn-soft:#382d12; --bad:#f07a6f; --bad-soft:#3d1d1a;
+  --c1:#5b9be4; --c2:#f5b14e; --c3:#3fc2b0; --c4:#a790e6; --c5:#e47f96; --shadow:0 6px 24px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1520; --surface:#16202d; --surface-2:#1b2737; --line:#2a3849; --fg:#e5ecf5; --muted:#97a6ba;
+  --brand:#7fb0f0; --brand-2:#3d82cf; --thead:#1d5f93; --brand-soft:#1b2c44; --accent:#f5b14e; --accent-soft:#3a2d17;
+  --ok:#4cc48c; --ok-soft:#173528; --warn:#e2b04a; --warn-soft:#382d12; --bad:#f07a6f; --bad-soft:#3d1d1a;
+  --c1:#5b9be4; --c2:#f5b14e; --c3:#3fc2b0; --c4:#a790e6; --c5:#e47f96; --shadow:0 6px 24px rgba(0,0,0,.4); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.5}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand-2);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* review banner */
+.review{background:var(--accent-soft);color:var(--fg);border-bottom:1px solid var(--line);font-size:13px;padding-block:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.review b{color:var(--warn)}
+
+/* system menu */
+.sysbar{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.sysrow{display:flex;align-items:stretch;gap:2px;overflow-x:auto;scrollbar-width:thin}
+.mi{position:relative;display:flex;align-items:center;gap:6px;padding:10px 12px;white-space:nowrap;color:var(--muted);border:0;background:none;border-bottom:3px solid transparent}
+.mi svg{width:17px;height:17px;flex:none}
+.brandmark{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--brand);white-space:nowrap;padding:8px 18px 8px 0;margin-right:6px;border-right:1px solid var(--line)}
+.brandmark b{background:var(--brand);color:#fff;border-radius:4px;padding:2px 7px;font-size:12.5px;letter-spacing:.04em}
+.mi{font-weight:500}
+.mi.sys{opacity:.85}
+.mi.sys:hover{color:var(--fg)}
+.mi.on{color:var(--brand);font-weight:600;border-bottom-color:var(--brand);background:var(--brand-soft)}
+.mi .car{width:10px;height:10px;opacity:.7}
+.dd{position:absolute;z-index:40;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:4px;min-width:260px;padding:4px 0}
+.dd button{display:flex;width:100%;text-align:left;border:0;background:none;padding:10px 16px;gap:10px;align-items:center}
+.dd button:hover{background:var(--brand-soft)}
+.dd button.on{background:var(--brand-2);color:#fff}
+.dd small{display:block;color:var(--muted);font-size:12px}
+.dd button.on small{color:#dbe9fb}
+
+/* page head */
+.phead{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding-block:14px 10px}
+.ptitle{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--brand);font-size:16px;margin:0}
+.ptitle .tile{width:22px;height:22px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.ptitle .tile i{display:block;border-radius:1px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid transparent;border-radius:4px;padding:8px 16px;font-weight:600;background:var(--brand-2);color:#fff;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:var(--surface);color:var(--brand);border-color:var(--line)}
+.btn.ghost:hover{background:var(--brand-soft)}
+.btn.warm{background:var(--accent);color:#2b1d00}
+.btn.sm{padding:5px 10px;font-size:13px;font-weight:500}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.btn svg{width:16px;height:16px}
+
+main{padding-bottom:40px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.pad{padding:16px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:14px}
+h2{font-size:15px;margin:0 0 10px;text-wrap:balance}
+h3{font-size:14px;margin:0 0 8px}
+.label{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* filter bar */
+.filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:10px 0}
+.field{display:flex;align-items:center;gap:8px}
+.field b{font-weight:600}
+.select,.input{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:7px 10px;min-width:0}
+.input{width:100%}
+
+/* table */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th{background:var(--thead);color:#fff;font-weight:600;text-align:left;padding:10px 12px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.18)}
+td{padding:11px 12px;border-top:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:var(--surface-2)}
+td.c,th.c{text-align:center}
+td .link{display:inline-block;min-width:220px}
+.link{color:var(--brand-2);font-weight:600;background:none;border:0;padding:0;text-align:left}
+.link:hover{text-decoration:underline}
+
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.chip.open{background:var(--ok-soft);color:var(--ok)}
+.chip.draft{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.chip.closed{background:var(--brand-soft);color:var(--brand)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.plain::before{display:none}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;min-width:90px}
+.bar i{display:block;height:100%;background:var(--c1)}
+
+/* survey context strip */
+.ctx{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 16px;margin-bottom:14px}
+.ctx .name{font-weight:700;font-size:15px}
+.steps{display:flex;gap:0;flex-wrap:wrap;margin-left:auto}
+.step{border:1px solid var(--line);background:var(--surface);padding:6px 14px;font-size:13px;display:flex;gap:6px;align-items:center;margin-left:-1px}
+.step:first-child{border-radius:4px 0 0 4px;margin-left:0}.step:last-child{border-radius:0 4px 4px 0}
+.step .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:var(--surface-2);border:1px solid var(--line)}
+.step.on{background:var(--brand-2);color:#fff;border-color:var(--brand-2)}
+.step.on .n{background:#fff;color:var(--brand-2);border-color:#fff}
+.step.done .n{background:var(--ok);color:#fff;border-color:var(--ok)}
+
+/* create choices */
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.choice{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:18px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.choice:hover{border-color:var(--brand-2)}
+.choice.on{border-color:var(--brand-2);box-shadow:inset 0 0 0 1px var(--brand-2);background:var(--brand-soft)}
+.choice .ic{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand)}
+.choice.on .ic{background:var(--surface)}
+.choice .ic svg{width:22px;height:22px}
+.choice strong{font-size:15px}
+.tag{font-size:11.5px;font-weight:700;color:var(--ok);background:var(--ok-soft);border-radius:3px;padding:1px 6px;align-self:flex-start}
+
+.wiz{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 12px}
+.wiz span{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.wiz span b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-size:12px}
+.wiz span.on{color:var(--fg);font-weight:600}.wiz span.on b{background:var(--brand-2);color:#fff;border-color:var(--brand-2)}
+.wiz span.done b{background:var(--ok);color:#fff;border-color:var(--ok)}
+.wiz i{flex:none;width:28px;height:1px;background:var(--line);align-self:center}
+
+.two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px}
+.drop{border:2px dashed var(--line);border-radius:6px;padding:22px;display:flex;gap:14px;align-items:center;background:var(--surface-2)}
+.file{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:10px 12px;background:var(--surface)}
+.fico{width:34px;height:40px;border-radius:3px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px;flex:none}
+.fico.w{background:#2b5fb4}.fico.x{background:#1f7a45}
+.rules{font-size:13px}
+.rules code{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+.rules ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
+.sample{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px;white-space:pre-wrap;margin:8px 0 0;overflow-x:auto}
+
+.qsec td{background:var(--brand-soft);font-weight:700;color:var(--brand)}
+tr.bad td{background:var(--warn-soft)}
+.opts{color:var(--muted);font-size:13px}
+
+/* editor */
+.editor{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:14px;align-items:start}
+.qlist{padding:8px}
+.qlist .sec{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:10px 8px 4px}
+.qi{display:flex;gap:8px;width:100%;border:0;background:none;text-align:left;padding:8px;border-radius:4px;align-items:flex-start}
+.qi:hover{background:var(--surface-2)}
+.qi.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.qi .no{flex:none;width:22px;color:var(--muted);font-variant-numeric:tabular-nums}
+.qedit{display:grid;gap:14px}
+.flabel{display:grid;gap:6px;font-weight:600;font-size:13px}
+.typegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.typegrid button{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:8px;text-align:left;font-size:13px}
+.typegrid button.on{border-color:var(--brand-2);background:var(--brand-soft);color:var(--brand);font-weight:600}
+.optrow{display:flex;gap:8px;align-items:center}
+.optrow .dot{width:14px;height:14px;border:2px solid var(--line);border-radius:50%;flex:none}
+.optrow .dot.sq{border-radius:3px}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.switch input{appearance:none;width:36px;height:20px;border-radius:99px;background:var(--line);position:relative;margin:0;cursor:pointer}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.switch input:checked{background:var(--brand-2)}.switch input:checked::after{left:18px}
+.tpick{position:relative;min-width:0}
+.tbtn{display:flex;align-items:center;gap:8px;width:100%;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden}
+.tbtn span:not(.chev){overflow:hidden;text-overflow:ellipsis}
+.tbtn .chev{margin-left:auto;color:var(--muted)}
+.ti{width:18px;height:18px;flex:none;color:var(--muted)}
+.tmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:40;width:260px;max-height:380px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:0 10px 28px rgba(15,30,60,.16);padding:4px 6px 6px}
+.tmenu .tg{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:10px 8px 4px}
+.tmenu button{display:flex;align-items:center;gap:12px;width:100%;padding:7px 8px;border:0;background:none;border-radius:4px;font:inherit;color:var(--fg);cursor:pointer;text-align:left}
+.tmenu button:hover,.tmenu button:focus-visible{background:var(--surface-2)}
+.tmenu button.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.tmenu button.on .ti{color:var(--brand)}
+details.adv{border:1px solid var(--line);border-radius:4px;padding:8px 12px;background:var(--surface-2)}
+details.adv summary{cursor:pointer;font-weight:600;font-size:13px}
+
+/* publish */
+.qr{width:150px;height:150px;image-rendering:pixelated;background:#fff;padding:8px;border:1px solid var(--line);border-radius:4px}
+.copy{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.copy .input{flex:1 1 240px;font-family:Consolas,"Cascadia Mono",monospace;font-size:13px}
+
+/* reports */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:24px;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1.2;margin-top:4px}
+.kpi .s{font-size:12.5px;color:var(--muted)}
+.rtabs{display:flex;gap:0;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:4px 0 14px}
+.rtab{border:0;background:none;padding:10px 14px;color:var(--muted);border-bottom:3px solid transparent;font-weight:500}
+.rtab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:700}
+.insight{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.insight li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
+.insight li b.k{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--brand-2);color:#fff;font-size:12px}
+.hbars{display:grid;gap:9px}
+.hb{display:grid;grid-template-columns:minmax(110px,190px) minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:13px}
+.hb .tr{height:16px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.hb .tr i{display:block;height:100%;border-radius:3px}
+.hb .vv{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.donut{width:150px;height:150px;border-radius:50%;position:relative;flex:none}
+.donut::after{content:"";position:absolute;inset:34px;border-radius:50%;background:var(--surface)}
+.legend{display:grid;gap:6px;font-size:13px}
+.legend span{display:flex;gap:8px;align-items:center}
+.legend i{width:11px;height:11px;border-radius:2px;flex:none}
+.cols{display:flex;align-items:flex-end;gap:14px;height:150px;padding:0 6px;border-bottom:1px solid var(--line)}
+.cols div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:12px;color:var(--muted)}
+.cols div i{display:block;width:100%;max-width:46px;background:var(--c1);border-radius:3px 3px 0 0}
+.colx{display:flex;gap:14px;padding:4px 6px 0;font-size:12px;color:var(--muted)}
+.colx span{flex:1;text-align:center}
+.heat td.h{text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.quote{border-left:3px solid var(--line);padding:4px 10px;color:var(--muted);font-size:13px;margin:6px 0}
+.qgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-items:stretch}
+.qgrid .qcard{grid-template-rows:auto 1fr;align-items:center}
+.qcard{padding:16px;display:grid;gap:12px;min-width:0}
+.qcard .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.export{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:4px;font-weight:600;box-shadow:var(--shadow);z-index:60}
+.note{font-size:12.5px;color:var(--muted);border:1px dashed var(--line);border-radius:4px;padding:8px 12px;background:var(--surface)}
+.note b{color:var(--warn)}
+
+/* v4: menu thả xuống, khu soạn khảo sát, quản trị */
+.mi .car{margin-left:2px}
+.dd button .k{font-variant-numeric:tabular-nums;color:var(--muted);min-width:30px}
+.dd button.on .k{color:#dbe9fb}
+.subtabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--line);margin:0 0 14px}
+.subtabs button{border:0;background:none;padding:10px 14px;color:var(--muted);border-bottom:3px solid transparent;font-weight:500}
+.subtabs button.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:700}
+.pending{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-radius:4px;background:var(--warn-soft);color:var(--warn);font-weight:600;font-size:13px;margin-bottom:12px}
+.pending .btn{margin-left:auto}
+.feed{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.feed li{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.feed li:first-child{border-top:0}
+.feed time{color:var(--muted);font-variant-numeric:tabular-nums}
+.attn{display:grid;gap:8px}
+.attn div{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface-2)}
+.phone{width:min(100%,340px);border:10px solid var(--fg);border-radius:26px;background:var(--bg);padding:16px;display:grid;gap:12px;margin-inline:auto}
+.phone.desk{width:100%;border-width:1px;border-color:var(--line);border-radius:6px}
+.pq{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;display:grid;gap:8px}
+.pq label{display:flex;gap:8px;align-items:center}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tcard{display:grid;gap:8px;padding:16px}
+.tcard .swatch{height:6px;border-radius:3px}
+.detail{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
+.kv{display:grid;grid-template-columns:minmax(120px,40%) minmax(0,1fr);gap:6px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:500}
+details.card{border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+details.card>summary{cursor:pointer;padding:12px 16px;font-weight:700;display:flex;justify-content:space-between;gap:10px;list-style:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"＋";color:var(--muted)}
+details.card[open]>summary::after{content:"－"}
+details.card>div{padding:0 16px 16px;display:grid;gap:12px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.modes button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:12px;text-align:left;display:grid;gap:2px}
+.modes button.on{border-color:var(--brand-2);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand-2)}
+.modes small{color:var(--muted)}
+@media (max-width:860px){.two,.editor,.detail{grid-template-columns:minmax(0,1fr)}.steps{margin-left:0}}
+tr.sel td{background:var(--brand-soft)}
+.outline{position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);max-height:calc(100vh - 80px);overflow:auto}
+.qcardx{gap:10px;scroll-margin-top:64px}
+.qcardx.focus{border-color:var(--brand-2);box-shadow:inset 3px 0 0 var(--brand-2)}
+.qhead{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,210px);gap:8px}
+.qhead .input{font-weight:600}
+.secttl{margin:8px 0 0;color:var(--brand);font-size:14px}
+@media (max-width:860px){.outline{position:static;max-height:none}}
+/* Soạn khảo sát: đầu trang 2 dòng, phần trên cố định, 2 khung cuộn riêng */
+.ehead{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;padding-block:10px 4px}
+.ehead .ttl{display:flex;gap:10px;align-items:center;min-width:0;flex:1 1 360px}
+.ehead .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.etabs{margin-bottom:10px}
+.wtabs button{display:inline-flex;align-items:center;gap:7px}
+.wtabs .n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+.wtabs button.on .n{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
+.wtabs .n.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;border-left:1px solid var(--line);background:none;padding:6px 10px;font-size:13px}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--brand-2);color:#fff;font-weight:600}
+.field{flex-wrap:wrap}
+.acts{display:grid;grid-template-columns:64px 78px 72px 84px;gap:6px;align-items:center;justify-content:center}
+.acts .btn{justify-content:center;padding-inline:6px}
+.acts .select{padding:4px 6px;font-size:13px;width:100%}
+.etabs button{padding:7px 14px}
+@media (min-width:861px){
+  html.fit,html.fit body{height:100%}
+  html.fit body{display:flex;flex-direction:column;overflow:hidden}
+  html.fit .review{display:none}
+  html.fit .sysbar{position:static}
+  html.fit main{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:12px}
+  html.fit .editor{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
+  html.fit .editor>.outline,html.fit .editor>.qpane{position:static;height:100%;max-height:none;overflow:auto;overscroll-behavior:contain}
+  html.fit .qpane{padding-right:4px}
+}
+@media (max-width:520px){.qhead{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.hb{grid-template-columns:minmax(0,1fr) 70px}.hb .tr{grid-column:1/-1;grid-row:2}}
+/* v12: soạn câu hỏi, xem trước như người trả lời, kiểm tra chéo */
+.drag{cursor:grab;color:var(--muted);user-select:none;padding:0 4px;font-weight:700;letter-spacing:-1px}
+.drag:active{cursor:grabbing}
+.dropat{box-shadow:inset 0 3px 0 var(--accent)!important}
+.etool{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:0 2px 10px rgba(21,75,152,.08)}
+.etool .btn .ti,.attach .btn .ti{color:currentColor;width:16px;height:16px}
+.etool .sep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
+.secrow{display:flex;gap:8px;align-items:center;margin-top:8px;scroll-margin-top:64px;border-radius:6px}
+.secrow.focus{box-shadow:0 0 0 2px var(--brand-2)}
+.secin{font-weight:700;color:var(--brand);background:var(--brand-soft);border-color:transparent}
+.blk{border-style:dashed;background:var(--surface-2)}
+.qi .no .ti{width:15px;height:15px}
+.qi.blkq{font-size:12.5px;padding-block:5px}
+.qlist .sec{cursor:grab}
+.gridx{min-width:0}.gridx th{background:var(--surface-2);color:var(--fg);padding:6px;border-right:1px solid var(--line)}.gridx td{padding:6px}.gridx .ph{color:var(--muted);font-size:12px}
+.gridx .input{padding:5px 8px}
+.mini{display:grid;gap:6px}
+.split2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;align-items:start}
+.attach{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.hint{font-size:13px;color:var(--muted)}
+.subt{min-width:0}.subt th{background:var(--surface-2);color:var(--fg);padding:6px 8px}.subt td{padding:6px 8px}
+.pvlogo{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.pvlogo b{background:var(--brand);color:#fff;border-radius:4px;padding:2px 7px}
+.pvnote{font-size:12.5px;background:var(--ok-soft);color:var(--fg);border-radius:4px;padding:8px 10px;margin:0}
+.pvform{display:grid;gap:12px}
+.phone.desk .pvform{grid-template-columns:210px minmax(0,1fr);align-items:start}
+.pvqs{display:grid;gap:12px;min-width:0}
+.rail{display:grid;gap:6px;align-content:start;position:sticky;top:8px}
+.rp{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:6px 8px;font-size:12.5px;text-align:left}
+.rp.on{border-color:var(--brand-2);background:var(--brand-soft);font-weight:600}
+.rp.ok span:last-child{color:var(--ok);font-weight:700}
+.ptop{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12.5px}
+.perr{font-size:12.5px;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:6px 8px}
+.mtx{min-width:0;font-size:12.5px}.mtx th{background:var(--surface-2);color:var(--fg);padding:6px 4px;text-align:center;border-right:0}.mtx td{padding:6px 4px;text-align:center}.mtx td:first-child{text-align:left}
+.pimg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pimg span{background:linear-gradient(135deg,var(--brand-soft),var(--surface-2));border:1px solid var(--line);border-radius:4px;padding:16px 6px;text-align:center;font-size:12px;font-weight:600;color:var(--brand)}
+.pvid{display:grid;place-items:center;aspect-ratio:16/9;background:#10233f;color:#fff;border-radius:4px;font-size:12.5px}
+.pvsave{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px}
+.rgrid button{aspect-ratio:1;border-radius:4px;border:1px solid var(--line);font-weight:700;background:var(--surface)}
+.rgrid .ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.rgrid .miss{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+.rgrid .wn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+.rgrid .opt{color:var(--muted);border-style:dashed}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legend2 i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.stack{display:flex;height:18px;border-radius:3px;overflow:hidden;background:var(--surface-2)}
+.stack i{display:block;height:100%}
+.sb{display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr);gap:10px;align-items:center;font-size:13px}
+.fico.p{background:#b8322a}
+.mask{font-family:Consolas,"Cascadia Mono",monospace}
+@media (max-width:860px){.etool{top:46px}.phone.desk .pvform{grid-template-columns:minmax(0,1fr)}.rail{position:static}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="review gut"><b>Bản mockup để duyệt (bản 12)</b><span>Mới: thanh công cụ soạn, kéo thả đổi thứ tự, loại câu ghép / bảng số / ma trận / khoảng số; xem trước như người trả lời; danh mục đơn vị; kiểm tra chéo; che dữ liệu cá nhân. Dữ liệu chỉ là minh họa.</span></div>
+
+<header class="sysbar">
+  <nav class="sysrow gut" id="sysmenu" aria-label="Menu khảo sát"></nav>
+</header>
+<div id="ddhost"></div>
+
+<main class="gut" id="app"></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const ic = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg>',
+  survey:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v3h6V3M8.5 11l1.5 1.5L13 9.5M8.5 16.5 10 18l3-3M15 11.5h1M15 17h1"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg>',
+  stat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg>',
+  tpl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg>',
+  admin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  car:'<svg class="car" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  blank:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h8l4 4v14H6z"/><path d="M12 11v6M9 14h6"/></svg>',
+  dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>',
+  copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>',
+  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg>',
+};
+
+/* ---------- menu: 4 mục. Mọi việc của một khảo sát nằm trong hồ sơ khảo sát (5 tab theo vòng đời) ---------- */
+const MENU = [
+  {k:'home', l:'1. Tổng quan', i:'home'},
+  {k:'list', l:'2. Khảo sát', i:'survey'},
+  {k:'templates', l:'3. Thư viện mẫu', i:'tpl'},
+  {l:'4. Quản trị', i:'admin', sub:[['users','4.1. Người dùng & vai trò','Ai được vào, quyền gì'],['projects','4.2. Dự án / phòng ban','Nhóm khảo sát theo đơn vị'],['units','4.3. Danh mục trường / đơn vị','Danh sách dùng chung, nhập từ Excel'],['audit','4.4. Nhật ký thao tác','Ai làm gì, lúc nào'],['config','4.5. Cài đặt chung','Giao diện mặc định, lưu dữ liệu']]},
+];
+const TITLE = {home:'1. Tổng quan', list:'2. Khảo sát', create:'2. Tạo khảo sát mới', survey:'2. Khảo sát', templates:'3. Thư viện mẫu'};
+MENU.forEach(m=>(m.sub||[]).forEach(([k,l])=>TITLE[k]=l));
+const GROUP = k => ['create','survey'].includes(k) ? 1 : MENU.findIndex(m=>m.k===k || (m.sub||[]).some(s=>s[0]===k));
+/* 5 tab trong hồ sơ khảo sát */
+const WTABS = [['soan','Soạn câu hỏi'],['phat','Phát hành & tiến độ'],['phan','Phản hồi'],['bc','Báo cáo'],['cd','Cài đặt']];
+/* tên màn hình cũ → tab mới (để các nút cũ vẫn đúng chỗ) */
+const LEGACY = {edit:{wt:'soan'}, publish:{wt:'phat'}, progress:{wt:'phat'}, responses:{wt:'phan'}, report:{wt:'bc'}, analysis:{wt:'bc',rtab:'pt'}, export:{wt:'bc',rtab:'xuat'}};
+const DEFAULT_TAB = {draft:'soan', open:'phat', paused:'phat', closed:'bc'};
+
+/* ---------- dữ liệu minh họa ---------- */
+const SURVEYS = [
+  {id:1, name:'Khảo sát nhu cầu chủ đề STEM 2026–2027', proj:'Giáo dục STEM 2026–2027', status:'open', target:150, got:128, start:'02/11/2026', end:'30/11/2026', who:'Các trường MN, TH, THCS, THPT'},
+  {id:2, name:'Đăng ký tham gia Ngày hội STEM', proj:'Đào tạo & sự kiện', status:'open', target:200, got:74, start:'10/11/2026', end:'', who:'Học sinh, phụ huynh'},
+  {id:3, name:'Đánh giá tập huấn giáo viên đợt 1', proj:'Đào tạo & sự kiện', status:'closed', target:60, got:57, start:'05/10/2026', end:'20/10/2026', who:'Giáo viên dự tập huấn'},
+  {id:5, name:'Khảo sát hài lòng khóa học Robotics', proj:'Giáo dục STEM 2026–2027', status:'paused', target:90, got:31, start:'01/11/2026', end:'25/11/2026', who:'Học viên khóa Robotics'},
+  {id:4, name:'Khảo sát hài lòng phụ huynh học kỳ I', proj:'Đào tạo & sự kiện', status:'draft', target:0, got:0, start:'—', end:'—', who:'Phụ huynh'},
+];
+const ST = {open:['open','Đang thu thập'], paused:['warn','Tạm dừng'], closed:['closed','Đã kết thúc'], draft:['draft','Bản nháp']};
+const TYPES = ['Trả lời ngắn','Đoạn văn','Chọn một','Chọn nhiều','Thang điểm 1–5','Số','Ngày','Bảng số liệu'];
+const MORE_TYPES = {'Nhập liệu':['Email','Số điện thoại','Đường link','Tiền tệ','Phần trăm','Giờ','Ngày giờ'],'Lựa chọn':['Danh sách thả xuống','Có / Không'],'Đánh giá':['Thang Likert','Điểm NPS (0–10)','Xếp hạng thứ tự','Ma trận đánh giá','Ma trận chọn mã'],'Đặc thù':['Chọn đơn vị từ danh mục','Câu hỏi ghép','Khoảng số (tối thiểu–tối đa)','Số lượng theo nhóm','Danh mục × cấp học','Địa chỉ (tỉnh/xã)','Thông tin liên hệ','Tải tệp lên','Đồng ý xử lý dữ liệu'],'Trình bày':['Tiêu đề','Đoạn mô tả','Hướng dẫn','Hình ảnh','Video','Liên kết','Đường kẻ']};
+const TICON = {"Trả lời ngắn":"<path d=\"M5 6h14M12 6v13\"/>","Đoạn văn":"<path d=\"M4 6h16M4 11h16M4 16h10\"/>","Chọn một":"<circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\" fill=\"currentColor\"/>","Chọn nhiều":"<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"3\"/><path d=\"m8 12 3 3 5-6\"/>","Thang điểm 1–5":"<path d=\"m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z\"/>","Số":"<path d=\"M5 9h14M5 15h14M10 4 8 20M16 4l-2 16\"/>","Ngày":"<rect x=\"4\" y=\"5\" width=\"16\" height=\"15\" rx=\"2\"/><path d=\"M4 10h16M8 3v4M16 3v4\"/>","Bảng số liệu":"<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><path d=\"M4 10h16M4 15h16M10 4v16\"/>","Email":"<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m3 7 9 6 9-6\"/>","Số điện thoại":"<path d=\"M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2\"/>","Đường link":"<path d=\"M9 15l6-6M11 6l1-1a4 4 0 0 1 6 6l-1 1M13 18l-1 1a4 4 0 0 1-6-6l1-1\"/>","Tiền tệ":"<rect x=\"3\" y=\"6\" width=\"18\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"2.5\"/><path d=\"M7 12h.01M17 12h.01\"/>","Phần trăm":"<path d=\"M19 5 5 19\"/><circle cx=\"7\" cy=\"7\" r=\"2.5\"/><circle cx=\"17\" cy=\"17\" r=\"2.5\"/>","Giờ":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>","Ngày giờ":"<rect x=\"4\" y=\"5\" width=\"16\" height=\"15\" rx=\"2\"/><path d=\"M4 10h16M8 3v4M16 3v4\"/><path d=\"M12 13v3l2 1\"/>","Danh sách thả xuống":"<rect x=\"3\" y=\"6\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"m9 11 3 3 3-3\"/>","Có / Không":"<rect x=\"2\" y=\"7\" width=\"20\" height=\"10\" rx=\"5\"/><circle cx=\"16\" cy=\"12\" r=\"3\"/>","Thang Likert":"<path d=\"M5 20v-5M10 20v-9M15 20V7M20 20V4\"/>","Điểm NPS (0–10)":"<path d=\"M4 18a8 8 0 1 1 16 0\"/><path d=\"m12 18 4-5\"/>","Xếp hạng thứ tự":"<path d=\"M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01\"/>","Ma trận":"<rect x=\"4\" y=\"4\" width=\"6\" height=\"6\" rx=\"1\"/><rect x=\"14\" y=\"4\" width=\"6\" height=\"6\" rx=\"1\"/><rect x=\"4\" y=\"14\" width=\"6\" height=\"6\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"6\" height=\"6\" rx=\"1\"/>","Số lượng theo nhóm":"<circle cx=\"9\" cy=\"8\" r=\"3\"/><path d=\"M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a6 6 0 0 0-4-5.6\"/>","Danh mục × cấp học":"<path d=\"M3 10 12 5l9 5-9 5z\"/><path d=\"M7 12v5c3 2 7 2 10 0v-5\"/>","Địa chỉ (tỉnh/xã)":"<path d=\"M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z\"/><circle cx=\"12\" cy=\"9\" r=\"2.5\"/>","Thông tin liên hệ":"<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>","Tải tệp lên":"<path d=\"M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3\"/>","Đồng ý xử lý dữ liệu":"<path d=\"M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z\"/><path d=\"m9 12 2 2 4-4\"/>","Tiêu đề":"<path d=\"M6 4v16M18 4v16M6 12h12\"/>","Đoạn mô tả":"<path d=\"M4 6h16M4 10h16M4 14h16M4 18h9\"/>","Hướng dẫn":"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v6M12 7.5h.01\"/>","Hình ảnh":"<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><circle cx=\"9\" cy=\"10\" r=\"2\"/><path d=\"m21 16-5-5L5 20\"/>","Video":"<rect x=\"3\" y=\"6\" width=\"13\" height=\"12\" rx=\"2\"/><path d=\"m16 10 5-3v10l-5-3\"/>","Liên kết":"<path d=\"M9 15l6-6M11 6l1-1a4 4 0 0 1 6 6l-1 1M13 18l-1 1a4 4 0 0 1-6-6l1-1\"/>","Đường kẻ":"<path d=\"M4 12h16\"/>"};
+Object.assign(TICON,{'Ma trận đánh giá':TICON['Ma trận'],'Ma trận chọn mã':'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>','Chọn đơn vị từ danh mục':'<path d="M4 21V8l8-4 8 4v13M9 21v-5h6v5M8 11h.01M12 11h.01M16 11h.01"/>','Câu hỏi ghép':'<path d="M4 4v16M4 6h16M8 11h12M8 16h12"/>','Khoảng số (tối thiểu–tối đa)':'<path d="M4 12h16M4 8v8M20 8v8M9 10l-2 2 2 2M15 10l2 2-2 2"/>'});
+const tico=y=>`<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TICON[y]||''}</svg>`;
+const IMPORTED = [
+  {sec:'Phần 1. Thông tin nhà trường'},
+  {no:1, q:'Tên trường', t:'Trả lời ngắn', req:true},
+  {no:2, q:'Cấp học', t:'Chọn một', opts:['Mầm non','Tiểu học','THCS','THPT','Liên cấp'], req:true},
+  {no:3, q:'Số lớp theo từng khối', t:null, guess:'Bảng số liệu', req:true, warn:'Không nhận ra loại câu hỏi. Gợi ý: Bảng số liệu.'},
+  {no:4, q:'Người phụ trách giáo dục STEM', t:'Thông tin liên hệ', req:false},
+  {no:5, q:'Số điện thoại liên hệ', t:'Số điện thoại', req:false},
+  {sec:'Phần 2. Nhu cầu chủ đề STEM'},
+  {no:6, q:'Chủ đề STEM nhà trường quan tâm', t:'Chọn nhiều', opts:['Robotics & lập trình','Năng lượng tái tạo','Trí tuệ nhân tạo','Khoa học môi trường','In 3D & thiết kế'], req:true},
+  {no:7, q:'Hình thức triển khai mong muốn', t:'Chọn một', opts:['Câu lạc bộ','Tích hợp trong tiết học','Trải nghiệm ngoại khóa'], req:true},
+  {no:8, q:'Mức độ sẵn sàng của giáo viên', t:'Thang điểm 1–5', req:true},
+  {no:9, q:'Thời điểm dự kiến triển khai', t:'Chọn một', opts:['Học kỳ I','Học kỳ II','Cả năm học'], req:false},
+  {sec:'Phần 3. Góp ý'},
+  {no:10, q:'Đề xuất, góp ý khác', t:'Đoạn văn', req:false},
+];
+
+/* câu hỏi của khảo sát đang soạn: mỗi mục có mã cố định (id), số câu tự đánh lại khi kéo thả */
+const QS = [
+  {id:'s1', sec:'Phần 1. Thông tin nhà trường'},
+  {id:'b1', b:'Hướng dẫn', text:'Thầy cô điền theo số liệu đầu năm học 2026–2027. Thông tin liên hệ chỉ dùng để KDI hỗ trợ nhà trường, không công bố.'},
+  {id:'q1', q:'Tên trường', t:'Chọn đơn vị từ danh mục', req:true, hint:'Gõ vài chữ để tìm, ví dụ “Lê Lợi”'},
+  {id:'q2', q:'Cấp học', t:'Chọn một', opts:['Mầm non','Tiểu học','THCS','THPT','Liên cấp'], req:true},
+  {id:'q3', q:'Số lớp và số học sinh theo từng khối', t:'Bảng số liệu', req:true, cond:true, rows:['Khối 6','Khối 7','Khối 8','Khối 9'], cols:['Số lớp','Số học sinh'], hint:'Chỉ nhập số; để 0 nếu trường không có khối đó'},
+  {id:'q4', q:'Người phụ trách giáo dục STEM', t:'Câu hỏi ghép', req:false, subs:[['Họ và tên','Trả lời ngắn',true,true],['Chức vụ','Trả lời ngắn',false,false],['Số điện thoại','Số điện thoại',true,true],['Email','Email',false,true]]},
+  {id:'s2', sec:'Phần 2. Thực trạng và nhu cầu STEM'},
+  {id:'b2', b:'Hình ảnh', cap:'Ba mức triển khai giáo dục STEM theo Công văn 909/BGDĐT-GDTrH'},
+  {id:'q5', q:'Số lớp đã tổ chức hoạt động STEM trong năm học trước', t:'Số', unit:'lớp', req:true, check:'Không lớn hơn tổng cột “Số lớp” ở câu 3'},
+  {id:'q6', q:'Chủ đề STEM nhà trường quan tâm', t:'Chọn nhiều', opts:['Robotics & lập trình','Năng lượng tái tạo','Trí tuệ nhân tạo','Khoa học môi trường','In 3D & thiết kế'], req:true},
+  {id:'q7', q:'Hình thức triển khai mong muốn', t:'Chọn một', opts:['Câu lạc bộ','Tích hợp trong tiết học','Trải nghiệm ngoại khóa'], req:true},
+  {id:'q8', q:'Mức độ sẵn sàng của giáo viên', t:'Ma trận đánh giá', req:true, rows:['Kiến thức về giáo dục STEM','Kỹ năng tổ chức hoạt động','Sử dụng thiết bị, bộ kit'], scale:5, lo:'Rất thấp', hi:'Rất cao'},
+  {id:'q9', q:'Mức độ đáp ứng cơ sở vật chất', t:'Ma trận chọn mã', req:true, rows:['Phòng học STEM','Bộ kit robotics','Máy in 3D','Kết nối Internet'], codes:[['0','Chưa có'],['1','Có nhưng chưa đủ'],['2','Đủ dùng'],['3','Đủ và hiện đại'],['KDL','Không có dữ liệu']]},
+  {id:'q10', q:'Kinh phí nhà trường có thể dành cho STEM mỗi năm', t:'Khoảng số (tối thiểu–tối đa)', unit:'triệu đồng', req:false, hint:'Ước lượng, chưa cần chính xác', check:'Tối thiểu ≤ Tối đa'},
+  {id:'b3', b:'Video', url:'https://youtu.be/minh-hoa-clb-stem', cap:'Giới thiệu mô hình câu lạc bộ STEM (3 phút)'},
+  {id:'q11', q:'Thời điểm dự kiến triển khai', t:'Chọn một', opts:['Học kỳ I','Học kỳ II','Cả năm học'], req:false},
+  {id:'s3', sec:'Phần 3. Góp ý'},
+  {id:'b4', b:'Liên kết', text:'Xem chương trình tập huấn STEM 2026–2027', url:'https://kdi.edu.vn/stem/tap-huan'},
+  {id:'q12', q:'Đề xuất, góp ý khác', t:'Đoạn văn', req:false},
+];
+let uid=0;
+const qnum=()=>{let n=0;const m={};QS.forEach(x=>{if(x.q!=null)m[x.id]=++n});return m};
+const NQ=()=>QS.filter(x=>x.q!=null).length;
+const cut=(v,n=38)=>{v=String(v||'');return v.length>n?v.slice(0,n-1)+'…':v};
+const isPersonal=x=>x.pii||(x.subs||[]).some(r=>r[3])||['Số điện thoại','Email','Thông tin liên hệ'].includes(x.t);
+
+let state = {view:'home', survey:1, create:'file', wiz:1, fileType:'w', fixed:false, q:'q6', pvs:'intro', rtab:'tong', etab:'q', wt:'soan', pv:false, range:'30', open:-1, mode:'public', dev:'phone', resp:0};
+
+const $ = (s,el=document)=>el.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+const S = ()=>SURVEYS.find(x=>x.id===state.survey);
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const dt=v=>v&&v!=='—'?v:'–';
+
+/* ---------- menu ---------- */
+function renderMenu(){
+  const g=GROUP(state.view);
+  $('#sysmenu').innerHTML = `<span class="brandmark"><b>KDI</b>Hệ thống khảo sát STEM</span>` + MENU.map((m,i)=>
+    m.sub ? `<button class="mi ${g===i?'on':''}" data-menu="${i}" aria-haspopup="true" aria-expanded="${state.open===i}">${ic[m.i]}<span>${m.l}</span>${ic.car}</button>`
+          : `<button class="mi ${g===i?'on':''}" data-go="${m.k}">${ic[m.i]}<span>${m.l}</span></button>`).join('');
+}
+function renderDD(){
+  const host=$('#ddhost'); const i=state.open;
+  if(i<0){host.innerHTML='';return;}
+  const b=$(`[data-menu="${i}"]`); if(!b){host.innerHTML='';return;}
+  const r=b.getBoundingClientRect(); const left=Math.max(8,Math.min(r.left, innerWidth-300));
+  host.innerHTML=`<div class="dd" style="top:${r.bottom+scrollY}px;left:${left}px;min-width:290px" role="menu">${MENU[i].sub.map(([v,l,s])=>`<button role="menuitem" data-go="${v}" class="${state.view===v?'on':''}"><span>${l}<small>${s}</small></span></button>`).join('')}</div>`;
+}
+document.addEventListener('click',e=>{
+  const m=e.target.closest('[data-menu]');
+  if(m){state.open = state.open===+m.dataset.menu ? -1 : +m.dataset.menu; renderMenu(); renderDD(); return;}
+  if(state.open>=0 && !e.target.closest('.dd')){state.open=-1; renderMenu(); renderDD();}
+});
+addEventListener('resize',()=>state.open>=0&&renderDD());
+
+/* ---------- điều hướng ---------- */
+function go(v,extra={}){
+  if(LEGACY[v]){extra={...LEGACY[v],...extra}; v='survey';}
+  if(extra.etab==='st'){extra.wt='cd';}
+  if(v==='survey'&&!extra.wt) extra.wt=DEFAULT_TAB[SURVEYS.find(x=>x.id===(extra.survey??state.survey)).status];
+  if(v==='survey'&&extra.wt!=='soan') extra.pv=false;
+  Object.assign(state,extra,{view:v,open:-1}); if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); render(); scrollTo({top:0});}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]'); if(g){e.preventDefault(); const x={}; if(g.dataset.sid) x.survey=+g.dataset.sid; if(g.dataset.etab) x.etab=g.dataset.etab; if(g.dataset.wt) x.wt=g.dataset.wt; go(g.dataset.go,x);}});
+addEventListener('hashchange',()=>{const v=location.hash.slice(1); if(TITLE[v]&&v!==state.view) go(v)});
+
+function head(actions=''){ if(state.view==='survey') return ''; return `<div class="phead"><h1 class="ptitle">${TITLE[state.view]}</h1><div class="actions">${actions}</div></div>`;}
+/* lọc theo khoảng thời gian tự chọn (không gắn với năm học) */
+function dateRange(id,label='Thời gian'){
+  return `<div class="field" role="group" aria-label="${label}"><b>${label}:</b>
+    <input type="date" class="select num" id="${id}a" aria-label="Từ ngày" title="Từ ngày"><span class="muted">đến</span><input type="date" class="select num" id="${id}b" aria-label="Đến ngày" title="Đến ngày"></div>`;
+}
+function picker(){
+  if(state.view==='survey') return '';
+  return `<div class="filters"><label class="field" for="pick"><b>Khảo sát:</b></label><select class="select" id="pick" style="max-width:100%">${SURVEYS.filter(s=>s.status!=='draft').map(s=>`<option value="${s.id}" ${s.id===state.survey?'selected':''}>${esc(s.name)}</option>`).join('')}</select><span class="chip ${ST[S().status][0]}">${ST[S().status][1]}</span></div>`;
+}
+const note = (b,t)=>`<p class="note" style="margin-top:14px"><b>${b}</b> ${t}</p>`;
+
+/* ---------- 1. tổng quan ---------- */
+function vHome(){
+  return head(`<button class="btn" data-go="create">${ic.up}Nhập câu hỏi từ Word/Excel</button><button class="btn ghost" data-go="create">${ic.plus}Tạo khảo sát</button>`)+
+  `<div class="filters">
+    <label class="field" for="h1"><b>Dự án:</b><select class="select" id="h1"><option>Tất cả dự án</option><option>Giáo dục STEM 2026–2027</option><option>Đào tạo & sự kiện</option></select></label>
+    <label class="field" for="h2"><b>Người tạo:</b><select class="select" id="h2"><option>Mọi người tạo</option><option>Tôi tạo</option></select></label>
+    ${dateRange('h3')}</div>
+  <div class="kpis">
+    <div class="panel kpi"><div class="label">Tổng số khảo sát</div><div class="v">12</div><div class="s">3 đang thu thập · 2 bản nháp</div></div>
+    <div class="panel kpi"><div class="label">Phản hồi đã gửi</div><div class="v">1.284</div><div class="s">+126 trong 7 ngày qua</div></div>
+    <div class="panel kpi"><div class="label">Đang làm dở</div><div class="v">46</div><div class="s">Có thể nhắc hoàn thành</div></div>
+    <div class="panel kpi"><div class="label">Tỷ lệ hoàn thành</div><div class="v">91%</div><div class="s">Số đã gửi / số đã bắt đầu</div></div>
+  </div>
+  <div class="two" style="margin-top:14px">
+    <section class="panel pad"><h2>Cần chú ý</h2><div class="attn">
+      <div><span><b>Khảo sát hài lòng khóa học Robotics</b><br><span class="muted">Tỷ lệ hoàn thành thấp: 34% · đang tạm dừng</span></span><button class="btn sm ghost" data-go="analysis">Xem chỗ bị bỏ dở</button></div>
+      <div><span><b>Khảo sát nhu cầu chủ đề STEM 2026–2027</b><br><span class="muted">Còn 12 ngày · 22 đơn vị chưa trả lời</span></span><button class="btn sm ghost" data-go="progress">Nhắc đơn vị</button></div>
+      <div><span><b>Khảo sát hài lòng phụ huynh học kỳ I</b><br><span class="muted">Bản nháp có thay đổi chưa xuất bản</span></span><button class="btn sm ghost" data-go="edit" data-sid="4">Soạn tiếp</button></div>
+    </div></section>
+    <section class="panel pad"><h2>Hoạt động gần đây</h2><ul class="feed">
+      <li><time>09:42</time><span><b>Quản trị KDI</b> xuất bản phiên bản 3 của "Đăng ký tham gia Ngày hội STEM"</span></li>
+      <li><time>08:15</time><span><b>Chuyên viên phân tích</b> gắn cờ 2 phản hồi trùng trường</span></li>
+      <li><time>Hôm qua</time><span><b>Quản trị KDI</b> tạo 40 lời mời riêng cho các trường THCS</span></li>
+      <li><time>Hôm qua</time><span><b>Quản trị KDI</b> tạm dừng "Khảo sát hài lòng khóa học Robotics"</span></li>
+    </ul><div style="margin-top:8px"><button class="btn sm ghost" data-go="audit">Xem nhật ký đầy đủ</button></div></section>
+  </div>
+  <div class="phead" style="padding-top:20px"><h2 style="margin:0">Khảo sát gần đây</h2><div class="actions"><button class="btn sm ghost" data-go="list">Xem tất cả</button></div></div>
+  ${surveyTable(SURVEYS.slice(0,3))}`;
+}
+
+/* ---------- 2.1 danh sách ---------- */
+function surveyTable(rows){
+  return `<div class="tablewrap"><table><thead><tr><th class="c">STT</th><th>Tên khảo sát</th><th>Dự án</th><th class="c">Ngày bắt đầu</th><th class="c">Ngày kết thúc</th><th>Trạng thái</th><th>Đã trả lời</th><th class="c">Thao tác</th></tr></thead><tbody>
+   ${rows.map((s,i)=>{const p=pct(s.got,s.target);
+     const d=s.status==='draft';
+     const act = `<button class="btn sm ${d?'':'ghost'}" data-go="edit" data-sid="${s.id}">Soạn</button><button class="btn sm ghost" data-go="progress" data-sid="${s.id}" ${d?'disabled title="Chưa phát hành"':''}>Theo dõi</button><button class="btn sm ${d?'ghost':''}" data-go="report" data-sid="${s.id}" ${d?'disabled title="Chưa có phản hồi"':''}>Báo cáo</button>`;
+     return `<tr><td class="c num">${i+1}</td><td><button class="link" data-go="survey" data-sid="${s.id}">${esc(s.name)}</button><div class="muted" style="font-size:12.5px">${s.who}</div></td><td class="muted">${s.proj}</td><td class="c num">${dt(s.start)}</td><td class="c num" ${s.start!=='—'&&!s.end?'title="Không thời hạn"':''}>${dt(s.end)}</td><td><span class="chip ${ST[s.status][0]}">${ST[s.status][1]}</span></td>
+     <td>${s.target?`<div class="row" style="gap:8px;flex-wrap:nowrap"><div class="bar" style="width:90px"><i style="width:${p}%"></i></div><span class="num">${s.got}/${s.target}</span></div>`:'<span class="muted">Chưa phát hành</span>'}</td>
+     <td><div class="acts">${act}<select class="select" aria-label="Thao tác khác" data-more="${s.id}"><option>Khác…</option><option>Nhân bản</option>${s.status==='closed'?'<option>Mở lại để nhận thêm phản hồi</option>':s.status==='draft'?'':`<option>${s.status==='paused'?'Mở lại':'Tạm dừng'}</option><option>Kết thúc khảo sát</option>`}</select></div></td></tr>`}).join('')}
+   </tbody></table></div>`;
+}
+function vList(){
+  return head(`<button class="btn" data-go="create">${ic.up}Nhập câu hỏi từ Word/Excel</button><button class="btn ghost" data-go="create">${ic.plus}Tạo khảo sát mới</button>`)+
+  `<div class="filters">
+     <label class="field" for="f0"><b>Dự án:</b><select class="select" id="f0"><option>Tất cả dự án</option><option>Giáo dục STEM 2026–2027</option><option>Đào tạo & sự kiện</option></select></label>
+     <label class="field" for="f1"><b>Trạng thái:</b><select class="select" id="f1"><option>Tất cả</option><option>Bản nháp</option><option>Đang thu thập</option><option>Tạm dừng</option><option>Đã kết thúc</option></select></label>
+     ${dateRange('f2','Ngày tạo')}
+     <input class="select" id="f3" placeholder="Tìm theo tên, đường dẫn, danh mục" style="flex:1 1 220px;max-width:340px">
+   </div>${surveyTable(SURVEYS)}`+
+   note('Trạng thái:','Bản nháp → Đang thu thập (có thể Tạm dừng) → Đã kết thúc. Bỏ "Lưu trữ" vì giống "Đã kết thúc". Lọc theo khoảng thời gian tự chọn để ẩn khảo sát cũ. Bấm tên khảo sát để mở hồ sơ: Soạn → Phát hành & tiến độ → Phản hồi → Báo cáo.');
+}
+
+/* ---------- 2.2 tạo khảo sát ---------- */
+function vCreate(){
+  const c=state.create;
+  const choice=(k,icon,t,d,tag='')=>`<button class="choice ${c===k?'on':''}" data-create="${k}"><span class="ic">${icon}</span>${tag}<strong>${t}</strong><span class="muted">${d}</span></button>`;
+  let body='';
+  if(c==='file') body=vImport();
+  if(c==='tpl') body=`<div style="margin-top:16px">${templateCards(true)}</div>`;
+  if(c==='blank') body=`<div class="panel pad" style="margin-top:16px;display:grid;gap:12px"><div class="fgrid">
+     <label class="flabel" for="nn">Tên khảo sát<input class="input" id="nn" value="Khảo sát hài lòng phụ huynh học kỳ I"></label>
+     <label class="flabel" for="np">Dự án / phòng ban<select class="select" id="np"><option>Đào tạo & sự kiện</option><option>Giáo dục STEM 2026–2027</option><option>+ Thêm dự án mới</option></select></label>
+     <label class="flabel" for="nc">Danh mục<input class="input" id="nc" value="Mức độ hài lòng"></label>
+     <label class="flabel" for="ns">Đường dẫn<input class="input" id="ns" value="hai-long-phu-huynh-hk1"></label></div>
+     <label class="flabel" for="nm">Mục đích khảo sát (nội bộ)<input class="input" id="nm" placeholder="Dữ liệu dùng để làm gì? Ai sử dụng?"></label>
+     <div><button class="btn" data-go="edit" data-sid="4">Tạo và soạn câu hỏi</button></div></div>`;
+  return head(`<button class="btn ghost" data-go="list">Quay lại danh sách</button>`)+
+   `<div class="choices">${choice('file',ic.up,'Nhập từ file Word / Excel','Đưa file câu hỏi có sẵn vào, hệ thống tự tách câu hỏi và lựa chọn. Chỉ cần sửa lại chỗ chưa đúng.','<span class="tag">Mới · nhanh nhất</span>')}
+     ${choice('tpl',ic.tpl,'Dùng mẫu có sẵn','Chọn một mẫu trong thư viện rồi chỉnh theo nhu cầu.')}
+     ${choice('blank',ic.blank,'Tạo mới từ đầu','Tự gõ từng câu hỏi. Phù hợp khảo sát ngắn, ít câu.')}</div>`+body;
+}
+function vImport(){
+  const w=state.wiz, wz=(n,l)=>`<span class="${w===n?'on':w>n?'done':''}"><b>${w>n?'✓':n}</b>${l}</span>`;
+  let h=`<div class="wiz">${wz(1,'Chọn file')}<i></i>${wz(2,'Kiểm tra câu hỏi')}<i></i>${wz(3,'Lưu bản nháp')}</div>`;
+  if(w===1){
+    const ft=state.fileType;
+    h+=`<div class="two"><div class="panel pad" style="display:grid;gap:14px">
+      <div class="drop"><span class="fico ${ft}">${ft==='w'?'DOCX':'XLSX'}</span><div style="flex:1;min-width:0"><b>Kéo thả file vào đây</b><div class="muted">hoặc bấm để chọn file .docx, .xlsx (tối đa 5 MB)</div></div><button class="btn ghost sm">Chọn file</button></div>
+      <div class="file"><span class="fico ${ft}">${ft==='w'?'W':'X'}</span><div style="flex:1;min-width:0"><b>${ft==='w'?'Cau-hoi-khao-sat-STEM-2026.docx':'Cau-hoi-khao-sat-STEM-2026.xlsx'}</b><div class="muted">${ft==='w'?'48 KB':'21 KB'} · vừa chọn</div></div><span class="chip open">Sẵn sàng</span></div>
+      <div class="fgrid"><label class="flabel" for="sn">Tên khảo sát<input class="input" id="sn" value="Khảo sát nhu cầu chủ đề STEM 2026–2027"></label>
+      <label class="flabel" for="sp">Dự án / phòng ban<select class="select" id="sp"><option>Giáo dục STEM 2026–2027</option><option>Đào tạo & sự kiện</option></select></label></div>
+      <div class="row"><button class="btn" id="readfile">Đọc file và tách câu hỏi</button><span class="muted">Mất vài giây</span></div>
+    </div>
+    <div class="panel pad rules">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">Cách soạn file để nhận đúng</h3>
+        <div class="row" style="gap:6px"><button class="btn sm ${ft==='w'?'':'ghost'}" data-ft="w">Word</button><button class="btn sm ${ft==='x'?'':'ghost'}" data-ft="x">Excel</button></div></div>
+      ${ft==='w'?`<ul><li>Dòng bắt đầu bằng <code>Phần</code> là tên phần.</li><li>Câu hỏi đánh số: <code>1.</code> <code>2.</code> …</li><li>Lựa chọn bắt đầu bằng <code>a)</code> hoặc <code>-</code></li><li>Thêm <code>(*)</code> cuối câu nếu bắt buộc trả lời.</li><li>Ghi <code>(chọn nhiều)</code> hoặc <code>(1-5)</code> để chọn loại câu hỏi.</li><li>Loại đặc thù: <code>(bảng: Khối 6; Khối 7 | Số lớp; Số HS)</code>, <code>(ma trận 1-5)</code>, <code>(mã: 0; 1; 2; 3; KDL)</code>, <code>(tối thiểu-tối đa)</code>, câu con <code>1.1</code> <code>1.2</code>.</li></ul>
+      <div class="sample">Phần 2. Nhu cầu chủ đề STEM
+6. Chủ đề STEM nhà trường quan tâm (chọn nhiều) (*)
+   a) Robotics &amp; lập trình
+   b) Năng lượng tái tạo
+8. Mức độ sẵn sàng của giáo viên (1-5) (*)</div>`
+      :`<ul><li>Mỗi dòng là một câu hỏi.</li><li>Cột: <code>Phần</code> · <code>Câu hỏi</code> · <code>Loại</code> · <code>Lựa chọn</code> · <code>Bắt buộc</code></li><li>Các lựa chọn cách nhau bằng dấu <code>;</code></li><li>Cột Bắt buộc ghi <code>x</code> nếu bắt buộc.</li></ul>
+      <div class="tablewrap" style="margin-top:8px"><table style="min-width:520px;font-size:12.5px"><thead><tr><th>Phần</th><th>Câu hỏi</th><th>Loại</th><th>Lựa chọn</th><th>Bắt buộc</th></tr></thead><tbody><tr><td>Nhu cầu</td><td>Chủ đề quan tâm</td><td>Chọn nhiều</td><td>Robotics; Năng lượng; AI</td><td class="c">x</td></tr><tr><td>Nhu cầu</td><td>Mức độ sẵn sàng</td><td>Thang điểm 1–5</td><td></td><td class="c">x</td></tr></tbody></table></div>`}
+      <div class="row" style="margin-top:12px"><button class="btn ghost sm" data-toast="Mockup: nút này sẽ tải file mẫu">${ic.dl}Tải file mẫu ${ft==='w'?'Word':'Excel'}</button></div>
+    </div></div>`;
+  }
+  if(w===2){
+    const qs=IMPORTED.filter(x=>x.no).length;
+    h+=`<div class="panel pad" style="margin-bottom:12px"><div class="row" style="justify-content:space-between">
+       <div class="row"><span class="chip open">Đã nhận ${qs} câu hỏi, 3 phần</span>${state.fixed?'<span class="chip open">Đã sửa hết lỗi</span>':'<span class="chip warn">1 câu cần chọn lại loại</span>'}</div>
+       <div class="actions"><button class="btn ghost" id="back1">Chọn file khác</button><button class="btn" id="save" ${state.fixed?'':'disabled'}>Lưu bản nháp và soạn tiếp</button></div></div></div>
+     <div class="tablewrap"><table><thead><tr><th class="c">Câu</th><th>Nội dung câu hỏi</th><th>Loại câu hỏi</th><th>Các lựa chọn</th><th class="c">Bắt buộc</th></tr></thead><tbody>
+     ${IMPORTED.map(x=>x.sec?`<tr class="qsec"><td colspan="5">${x.sec}</td></tr>`:
+       `<tr class="${x.warn&&!state.fixed?'bad':''}"><td class="c num">${x.no}</td><td><b>${esc(x.q)}</b>${x.warn&&!state.fixed?`<div style="color:var(--warn);font-size:12.5px">${x.warn}</div>`:''}</td>
+        <td><select class="select" data-fix="${x.warn?1:''}" aria-label="Loại câu ${x.no}">${x.warn&&!state.fixed?'<option>— Chọn loại —</option>':''}${[...TYPES,'Thông tin liên hệ','Số điện thoại'].map(t=>`<option ${(x.t||(state.fixed?x.guess:''))===t?'selected':''}>${t}</option>`).join('')}</select></td>
+        <td class="opts">${x.opts?x.opts.join(' · '):x.t==='Thang điểm 1–5'?'1 = Rất thấp … 5 = Rất cao':x.warn?'Khối 6 · Khối 7 · Khối 8 · Khối 9 (cột: số lớp)':'—'}</td>
+        <td class="c">${x.req?'<span style="color:var(--ok);font-weight:700">✓</span>':''}</td></tr>`).join('')}
+     </tbody></table></div>`;
+  }
+  return h;
+}
+
+/* ---------- 2.2 soạn khảo sát: Câu hỏi | Xem trước & kiểm tra | Cài đặt khảo sát ---------- */
+/* ---------- hồ sơ khảo sát: 2 dòng đầu + 5 tab theo vòng đời ---------- */
+function vSurvey(){
+  const s=S(), w=state.wt, draft=s.status==='draft';
+  const done={soan:!draft, phat:s.got>0, phan:s.got>0, bc:s.status==='closed'};
+  const stat = draft ? `<span class="muted">${NQ()} câu hỏi · chưa phát hành</span>`
+    : `<span class="num"><b>${s.got}/${s.target}</b> <span class="muted">đã trả lời · ${s.start} – ${s.end||'không thời hạn'}</span></span>`;
+  const acts = {
+    soan: `<button class="btn ghost sm" data-pv="1">${state.pv?'Quay lại soạn':'Xem trước & kiểm tra logic'}</button><button class="btn sm warm" data-toast="Đã xuất bản phiên bản 3">Xuất bản phiên bản 3</button>`,
+    phat: `<button class="btn ghost sm" data-toast="Đã tạm dừng nhận trả lời">Tạm dừng</button><button class="btn sm" data-toast="Đã lưu cấu hình phát hành">Lưu cấu hình</button>`,
+    phan: `<button class="btn ghost sm" data-go="export">${ic.dl}Xuất dữ liệu</button>`,
+    bc: `<button class="btn sm" data-rt="xuat">${ic.dl}Xuất báo cáo</button>`,
+    cd: `<button class="btn sm" data-toast="Đã lưu cài đặt">Lưu cài đặt</button>`,
+  }[w];
+  let body='';
+  if(w==='soan') body = state.pv ? editPreview() : editQuestions();
+  if(w==='phat') body = vPublish() + vProgress();
+  if(w==='phan') body = vResponses();
+  if(w==='bc') body = vReport();
+  if(w==='cd') body = editSettings();
+  return `<div class="ehead"><div class="ttl"><button class="btn ghost sm" data-go="list" aria-label="Về danh sách khảo sát">←</button><span class="nm" title="${esc(s.name)}">${esc(s.name)}</span><span class="chip ${ST[s.status][0]}">${ST[s.status][1]}</span>${stat}</div>
+     <div class="actions">${acts}</div></div>
+   <div class="subtabs etabs wtabs" role="tablist">${WTABS.map(([k,l],i)=>`<button role="tab" aria-selected="${w===k}" class="${w===k?'on':''}" data-wt="${k}" data-go="survey"><span class="n ${done[k]&&w!==k?'ok':''}">${k==='cd'?'⚙':done[k]&&w!==k?'✓':i+1}</span>${l}</button>`).join('')}
+     ${w==='soan'?`<span class="chip warn" style="margin-left:auto;align-self:center" title="2 câu sửa, 1 câu thêm. Người trả lời vẫn thấy phiên bản 2.">3 thay đổi chưa xuất bản</span>`:''}</div>`+body;
+}
+function typeSel(x,t,n){
+  return `<div class="tpick"><button type="button" class="select tbtn" data-tp="${x.id}" aria-haspopup="listbox" aria-expanded="${state.tp===x.id}" aria-label="Loại câu ${n}: ${t}">${tico(t)}<span>${t}</span><span class="chev" aria-hidden="true">▾</span></button>${state.tp===x.id?`<div class="tmenu" role="listbox" aria-label="Chọn loại câu ${n}">${Object.entries({'Hay dùng':TYPES,...MORE_TYPES}).filter(([g])=>g!=='Trình bày').map(([g,a])=>`<div class="tg">${g}</div>${a.map(y=>`<button type="button" role="option" aria-selected="${y===t}" class="${y===t?'on':''}" data-settype="${x.id}|${y}">${tico(y)}${y}</button>`).join('')}`).join('')}</div>`:''}</div>`;
+}
+const listEd=(items,lbl,k)=>`<div class="mini">${items.map((r,i)=>`<div class="optrow"><span class="muted num" style="width:22px">${i+1}</span><input class="input" id="${k}_${i}" value="${esc(r)}" aria-label="${lbl} ${i+1}"><button class="btn ghost sm" aria-label="Xóa ${lbl.toLowerCase()} ${i+1}">✕</button></div>`).join('')}<div><button class="btn ghost sm">${ic.plus}Thêm ${lbl.toLowerCase()}</button></div></div>`;
+function qbody(x,t,n){
+  const id=x.id;
+  if(x.opts) return `<div style="display:grid;gap:6px">${x.opts.map((o,i)=>`<div class="optrow"><span class="dot ${t==='Chọn nhiều'?'sq':''}"></span><input class="input" id="o${id}_${i}" value="${esc(o)}" aria-label="Lựa chọn ${i+1}"><button class="btn ghost sm" aria-label="Xóa lựa chọn ${i+1}">✕</button></div>`).join('')}<div><button class="btn ghost sm">${ic.plus}Thêm lựa chọn</button> <button class="btn ghost sm">Thêm “Khác (ghi rõ)”</button></div></div>`;
+  if(t==='Thang điểm 1–5') return `<div class="row"><span class="muted">1 =</span><input class="input" id="lo${id}" style="max-width:160px" value="Rất thấp" aria-label="Nhãn thấp nhất"><span class="muted">5 =</span><input class="input" id="hi${id}" style="max-width:160px" value="Rất cao" aria-label="Nhãn cao nhất"></div>`;
+  if(t==='Bảng số liệu'){const rows=x.rows||['Dòng 1','Dòng 2'], cols=x.cols||['Số lượng'];
+    return `<div class="tablewrap"><table class="gridx"><thead><tr><th>Dòng \\ Cột</th>${cols.map((c,i)=>`<th><input class="input" id="gc${id}_${i}" value="${esc(c)}" aria-label="Tên cột ${i+1}"></th>`).join('')}<th><button class="btn ghost sm">${ic.plus}Cột</button></th></tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr><td><input class="input" id="gr${id}_${i}" value="${esc(r)}" aria-label="Tên dòng ${i+1}"></td>${cols.map(()=>`<td class="c"><span class="ph">ô nhập số</span></td>`).join('')}<td></td></tr>`).join('')}
+      <tr><td colspan="${cols.length+2}"><button class="btn ghost sm">${ic.plus}Dòng</button></td></tr></tbody></table></div>
+      <div class="row"><label class="switch" for="gn${id}"><input type="checkbox" id="gn${id}" checked>Chỉ nhận số nguyên ≥ 0</label><label class="switch" for="gt${id}"><input type="checkbox" id="gt${id}" checked>Tự cộng dòng “Tổng”</label></div>`;}
+  if(t==='Ma trận đánh giá'){const sc=x.scale||5;
+    return `<div class="split2"><div><div class="label" style="margin-bottom:6px">Các tiêu chí (mỗi dòng một tiêu chí)</div>${listEd(x.rows||['Tiêu chí 1','Tiêu chí 2'],'Dòng','mr'+id)}</div>
+      <div style="display:grid;gap:8px"><label class="flabel" for="ms${id}">Thang điểm<select class="select" id="ms${id}">${[3,4,5,7,10].map(v=>`<option ${v===sc?'selected':''}>1 – ${v}</option>`).join('')}</select></label>
+      <div class="row" style="flex-wrap:nowrap"><span class="muted">1 =</span><input class="input" id="ml${id}" value="${esc(x.lo||'Rất thấp')}" aria-label="Nhãn mức thấp nhất"><span class="muted">${sc} =</span><input class="input" id="mh${id}" value="${esc(x.hi||'Rất cao')}" aria-label="Nhãn mức cao nhất"></div>
+      <label class="switch" for="mk${id}"><input type="checkbox" id="mk${id}">Thêm cột “Không ý kiến”</label>
+      <div class="tablewrap"><table class="mtx"><thead><tr><th></th>${Array.from({length:sc},(_,i)=>`<th>${i+1}</th>`).join('')}</tr></thead><tbody><tr><td>${esc(cut((x.rows||['Tiêu chí 1'])[0],22))}</td>${Array.from({length:sc},()=>'<td>○</td>').join('')}</tr></tbody></table></div></div></div>`;}
+  if(t==='Ma trận chọn mã'){const codes=x.codes||[['0','Không'],['1','Có']];
+    return `<div class="split2"><div><div class="label" style="margin-bottom:6px">Các dòng cần chọn mã</div>${listEd(x.rows||['Dòng 1','Dòng 2'],'Dòng','cr'+id)}</div>
+      <div><div class="label" style="margin-bottom:6px">Bảng mã (dùng chung cho mọi dòng)</div><div class="tablewrap"><table class="subt"><thead><tr><th style="width:84px">Mã</th><th>Ý nghĩa</th></tr></thead><tbody>${codes.map((c,i)=>`<tr><td><input class="input" id="cc${id}_${i}" value="${esc(c[0])}" aria-label="Mã ${i+1}"></td><td><input class="input" id="cm${id}_${i}" value="${esc(c[1])}" aria-label="Ý nghĩa mã ${i+1}"></td></tr>`).join('')}</tbody></table></div>
+      <div class="row" style="margin-top:6px"><button class="btn ghost sm">${ic.plus}Thêm mã</button><label class="switch" for="ck${id}"><input type="checkbox" id="ck${id}" checked>Mã “KDL” không tính vào thống kê</label></div></div></div>`;}
+  if(t==='Câu hỏi ghép'){const subs=x.subs||[['Ô 1','Trả lời ngắn',false,false]];
+    return `<div class="tablewrap"><table class="subt"><thead><tr><th style="width:52px">Số</th><th>Nhãn ô con</th><th style="width:170px">Loại</th><th class="c">Bắt buộc</th><th class="c">Dữ liệu cá nhân</th></tr></thead><tbody>
+      ${subs.map((r,i)=>`<tr><td class="num muted">${n}.${i+1}</td><td><input class="input" id="sl${id}_${i}" value="${esc(r[0])}" aria-label="Nhãn ô ${n}.${i+1}"></td><td><select class="select" id="sy${id}_${i}" aria-label="Loại ô ${n}.${i+1}">${['Trả lời ngắn','Số','Email','Số điện thoại','Ngày','Chọn một'].map(y=>`<option ${y===r[1]?'selected':''}>${y}</option>`).join('')}</select></td><td class="c"><input type="checkbox" id="sr${id}_${i}" ${r[2]?'checked':''} aria-label="Ô ${n}.${i+1} bắt buộc"></td><td class="c"><input type="checkbox" id="sp${id}_${i}" ${r[3]?'checked':''} aria-label="Ô ${n}.${i+1} là dữ liệu cá nhân"></td></tr>`).join('')}
+      </tbody></table></div><div><button class="btn ghost sm">${ic.plus}Thêm ô con</button> <span class="muted" style="font-size:12.5px">Các ô con hiện chung một khung, đánh số ${n}.1, ${n}.2…</span></div>`;}
+  if(t==='Số') return `<div class="fgrid"><label class="flabel" for="nu${id}">Đơn vị tính<input class="input" id="nu${id}" value="${esc(x.unit||'')}" placeholder="VD: lớp, học sinh, triệu đồng"></label><label class="flabel" for="na${id}">Nhỏ nhất<input class="input" id="na${id}" value="0"></label><label class="flabel" for="nb${id}">Lớn nhất<input class="input" id="nb${id}" placeholder="Không giới hạn"></label></div>`;
+  if(t==='Khoảng số (tối thiểu–tối đa)') return `<div class="fgrid"><label class="flabel" for="ru${id}">Đơn vị tính<input class="input" id="ru${id}" value="${esc(x.unit||'')}"></label><label class="flabel" for="ra${id}">Nhãn ô thứ nhất<input class="input" id="ra${id}" value="Tối thiểu"></label><label class="flabel" for="rb${id}">Nhãn ô thứ hai<input class="input" id="rb${id}" value="Tối đa"></label></div><p class="muted" style="margin:0;font-size:12.5px">Tự kiểm tra: ô thứ nhất không được lớn hơn ô thứ hai. Báo cáo tự tính nhỏ nhất / trung bình / lớn nhất.</p>`;
+  if(t==='Chọn đơn vị từ danh mục') return `<div class="fgrid"><label class="flabel" for="ud${id}">Lấy từ danh mục<select class="select" id="ud${id}"><option>Trường / đơn vị TP Huế (186)</option><option>Phòng ban KDI (12)</option></select></label><label class="flabel" for="uf${id}">Lọc danh sách theo<select class="select" id="uf${id}"><option>Không lọc</option><option>Cấp học (câu 2)</option></select></label></div>
+      <div class="row"><label class="switch" for="u1${id}"><input type="checkbox" id="u1${id}" checked>Mỗi đơn vị chỉ một phiếu (trả lời lại thì mở phiếu cũ để sửa)</label><label class="switch" for="u2${id}"><input type="checkbox" id="u2${id}" checked>Cho phép thêm đơn vị chưa có (chờ duyệt)</label><button class="btn ghost sm" data-go="units">Mở danh mục</button></div>`;
+  return `<p class="muted" style="margin:0;font-size:13px">Người trả lời gõ câu trả lời vào ô.</p>`;
+}
+const grip=x=>`<span class="drag" draggable="true" data-drag="${x.id}" title="Kéo để đổi vị trí" aria-hidden="true">⋮⋮</span>`;
+const cardActs=(x,del='Xóa')=>`<div class="row" style="gap:4px"><button class="btn ghost sm" data-dup="${x.id}">Nhân bản</button><button class="btn ghost sm" data-del="${x.id}">${del}</button></div>`;
+function blockBody(x){
+  const id=x.id;
+  if(x.b==='Hướng dẫn') return `<textarea class="input" id="bt${id}" rows="2" aria-label="Nội dung hướng dẫn" placeholder="Đoạn chữ hiển thị cho người trả lời đọc">${esc(x.text||'')}</textarea>`;
+  if(x.b==='Hình ảnh') return `<div class="drop" style="padding:14px"><span class="fico" style="background:var(--c3)">IMG</span><div style="flex:1;min-width:0"><b>${x.cap?'so-do-3-muc-stem.png':'Kéo ảnh vào đây'}</b><div class="muted">PNG, JPG tối đa 5 MB, hoặc dán link ảnh</div></div><button class="btn ghost sm">Chọn ảnh</button></div>
+      <div class="fgrid"><label class="flabel" for="bc${id}">Chú thích dưới ảnh<input class="input" id="bc${id}" value="${esc(x.cap||'')}"></label><label class="flabel" for="ba${id}">Mô tả ảnh (cho người khiếm thị)<input class="input" id="ba${id}" placeholder="Ảnh nói về điều gì"></label></div>`;
+  if(x.b==='Video') return `<div class="fgrid"><label class="flabel" for="bu${id}">Link video (YouTube, Google Drive)<input class="input" id="bu${id}" value="${esc(x.url||'')}"></label><label class="flabel" for="bc${id}">Chú thích<input class="input" id="bc${id}" value="${esc(x.cap||'')}"></label></div><p class="muted" style="margin:0;font-size:12.5px">Video phát ngay trong phiếu, người trả lời không phải rời trang.</p>`;
+  if(x.b==='Liên kết') return `<div class="fgrid"><label class="flabel" for="bt${id}">Chữ hiển thị<input class="input" id="bt${id}" value="${esc(x.text||'')}"></label><label class="flabel" for="bu${id}">Địa chỉ<input class="input" id="bu${id}" value="${esc(x.url||'')}" placeholder="https://"></label></div><label class="switch" for="bn${id}"><input type="checkbox" id="bn${id}" checked>Mở ở tab mới để không mất phiếu đang làm</label>`;
+  return '';
+}
+function editQuestions(){
+  const N=qnum();
+  const outline=QS.map(x=>x.sec!=null
+    ? `<div class="sec" draggable="true" data-drag="${x.id}" data-dropid="${x.id}" title="Kéo để đổi vị trí">${esc(x.sec.replace(/^Phần \d+\. /,''))}</div>`
+    : x.b ? `<button class="qi blkq ${x.id===state.q?'on':''}" data-q="${x.id}" draggable="true" data-drag="${x.id}" data-dropid="${x.id}"><span class="no">${tico(x.b)}</span><span class="muted">${x.b}${x.cap||x.text?': '+esc(cut(x.cap||x.text,30)):''}</span></button>`
+    : `<button class="qi ${x.id===state.q?'on':''}" data-q="${x.id}" draggable="true" data-drag="${x.id}" data-dropid="${x.id}"><span class="no">${N[x.id]}.</span><span>${esc(x.q)}</span></button>`).join('');
+  const card=x=>{
+    const n=N[x.id], t=x.t, id=x.id;
+    return `<section class="panel pad qedit qcardx ${id===state.q?'focus':''}" id="qc${id}" data-dropid="${id}" data-card="${id}">
+      <div class="row" style="justify-content:space-between"><span class="row" style="gap:6px">${grip(x)}<span class="label">Câu ${n}</span>${x.cond?'<span class="chip warn plain">Có điều kiện</span>':''}${x.check?'<span class="chip plain closed" title="'+esc(x.check)+'">Kiểm tra chéo</span>':''}${isPersonal(x)?'<span class="chip plain draft">Dữ liệu cá nhân</span>':''}</span>${cardActs(x)}</div>
+      <div class="qhead"><input class="input" id="qt${id}" value="${esc(x.q)}" aria-label="Nội dung câu ${n}">${typeSel(x,t,n)}</div>
+      <input class="input hint" id="qh${id}" value="${esc(x.hint||'')}" placeholder="Ghi chú dưới câu hỏi (không bắt buộc): đơn vị tính, cách đếm, ví dụ…" aria-label="Ghi chú câu ${n}">
+      ${qbody(x,t,n)}
+      <div class="attach"><span class="muted" style="font-size:12.5px">Minh họa cho câu này:</span><button class="btn ghost sm" data-toast="Mockup: chọn ảnh hiện ngay dưới câu ${n}">${tico('Hình ảnh')}Hình</button><button class="btn ghost sm" data-toast="Mockup: dán link YouTube / Drive cho câu ${n}">${tico('Video')}Video</button><button class="btn ghost sm" data-toast="Mockup: thêm link tài liệu cho câu ${n}">${tico('Liên kết')}Liên kết</button></div>
+      <div class="row" style="justify-content:space-between;align-items:flex-start"><label class="switch" for="req${id}"><input type="checkbox" id="req${id}" ${x.req?'checked':''}>Bắt buộc</label>
+      <details class="adv" style="flex:1 1 420px" ${x.check?'open':''}><summary>Tùy chọn nâng cao</summary><div style="display:grid;gap:8px;margin-top:8px" class="muted">
+       <span>Chỉ hiện câu này khi: <select class="select" id="cond${id}"><option>Luôn hiện</option><option ${x.cond?'selected':''}>Câu 2 = THCS hoặc THPT</option></select></span>
+       <span>Kiểm tra câu trả lời: <select class="select" id="val${id}"><option>Không</option><option>Độ dài tối thiểu/tối đa</option><option>Khoảng giá trị</option><option ${x.check?'selected':''}>So với câu khác</option></select>${x.check?` <b style="color:var(--fg)">${esc(x.check)}</b>`:''}</span>
+       <label class="switch" for="pii${id}"><input type="checkbox" id="pii${id}" ${isPersonal(x)?'checked':''}>Chứa dữ liệu cá nhân (che khi xem và khi xuất)</label>
+       <span>Mã câu (giữ nguyên khi đổi thứ tự): <code>${id.toUpperCase()}</code></span></div></details></div>
+    </section>`;
+  };
+  const sec=x=>`<div class="secrow ${x.id===state.q?'focus':''}" id="qc${x.id}" data-dropid="${x.id}" data-card="${x.id}">${grip(x)}<input class="input secin" id="sn${x.id}" value="${esc(x.sec)}" aria-label="Tên phần">${cardActs(x,'Xóa phần')}</div>`;
+  const blk=x=>`<section class="panel pad qedit qcardx blk ${x.id===state.q?'focus':''}" id="qc${x.id}" data-dropid="${x.id}" data-card="${x.id}">
+      <div class="row" style="justify-content:space-between"><span class="row" style="gap:6px">${grip(x)}${tico(x.b)}<span class="label">${x.b}</span></span>${cardActs(x)}</div>${blockBody(x)}</section>`;
+  const tb=(k,l,i)=>`<button class="btn ghost sm" data-add="${k}">${i}${l}</button>`;
+  const tool=`<div class="etool" role="toolbar" aria-label="Thêm vào khảo sát"><span class="muted" style="font-size:12.5px">Thêm sau mục đang chọn:</span>${tb('q','Câu hỏi',ic.plus)}${tb('sec','Phần mới',tico('Tiêu đề'))}<span class="sep"></span>${tb('Hướng dẫn','Đoạn hướng dẫn',tico('Hướng dẫn'))}${tb('Hình ảnh','Hình ảnh',tico('Hình ảnh'))}${tb('Video','Video',tico('Video'))}${tb('Liên kết','Liên kết',tico('Liên kết'))}</div>`;
+  const all=QS.map(x=>x.sec!=null?sec(x):x.b?blk(x):card(x)).join('');
+  return `<div class="editor"><nav class="panel qlist outline" aria-label="Mục lục câu hỏi">${outline}<div style="padding:8px;display:grid;gap:6px"><span class="muted" style="font-size:12px">Kéo thả để đổi thứ tự. Số câu tự đánh lại.</span><button class="btn ghost sm" style="justify-content:center" data-go="create">${ic.up}Nhập thêm từ file</button></div></nav>
+   <div class="grid qpane" style="gap:10px;align-content:start">${tool}${all}<button class="btn ghost" style="justify-content:center" data-add="q" data-end="1">${ic.plus}Thêm câu hỏi vào cuối</button></div></div>`;
+}
+/* xem trước đúng như người trả lời: giới thiệu → trả lời → kiểm tra → đã gửi */
+function editPreview(){
+  const d=state.dev, st=state.pvs, nq=NQ(), desk=d==='desk';
+  const steps=[['intro','Giới thiệu'],['form','Trả lời'],['review','Kiểm tra trước khi gửi'],['done','Đã gửi']];
+  const parts=[['Phần 1. Thông tin nhà trường','4/4','ok'],['Phần 2. Thực trạng và nhu cầu','3/7','on'],['Phần 3. Góp ý','0/1','']];
+  let inner='';
+  if(st==='intro') inner=`<div class="pvlogo"><b>KDI</b><span>KDI Education · Giáo dục STEM TP Huế</span></div>
+    <h2 style="margin:0;font-size:18px">${esc(S().name)}</h2>
+    <p class="muted" style="margin:0">Giúp KDI nắm thực trạng và nhu cầu giáo dục STEM của từng trường, để lên kế hoạch tập huấn, học liệu và thiết bị cho năm học mới.</p>
+    <dl class="kv"><dt>Số câu hỏi</dt><dd>${nq} câu, 3 phần</dd><dt>Thời gian</dt><dd>khoảng 8 phút</dd><dt>Hạn trả lời</dt><dd>30/11/2026</dd><dt>Người trả lời</dt><dd>Mỗi trường một phiếu</dd></dl>
+    <p class="pvnote"><b>Bảo mật:</b> thông tin liên hệ chỉ dùng để hỗ trợ nhà trường, không công bố. Phiếu tự lưu, thầy cô có thể làm tiếp sau hoặc nhờ đồng nghiệp điền tiếp.</p>
+    <button class="btn" data-pvs="form" style="justify-content:center">Bắt đầu</button>
+    <button class="btn ghost sm" style="justify-content:center" data-toast="Mockup: tải phiếu trống (PDF) để in, họp tổ thống nhất số liệu rồi mới nhập">${ic.dl}Tải phiếu trống để soạn trước (PDF)</button>`;
+  if(st==='form'){
+    const rail = desk
+      ? `<nav class="rail" aria-label="Các phần của phiếu"><div class="label">Tiến độ</div><div class="num" style="font-weight:700">7/${nq} câu</div><div class="bar"><i style="width:${pct(7,nq)}%"></i></div>${parts.map(([p,c,s])=>`<button class="rp ${s}" data-toast="Mockup: chuyển tới ${p}"><span>${p}</span><span class="num">${c}</span></button>`).join('')}<button class="btn ghost sm" data-pvs="review">Kiểm tra các câu đã làm</button></nav>`
+      : `<div style="display:grid;gap:6px"><div class="ptop"><span class="label">Phần 2/3 · Thực trạng và nhu cầu</span><span class="num"><b>7/${nq}</b> câu</span></div><div class="bar"><i style="width:${pct(7,nq)}%"></i></div></div>`;
+    const sc=[1,2,3,4,5];
+    const qs=`<div class="pvqs">
+      <div class="pq"><div class="pimg" role="img" aria-label="Hình minh họa ba mức triển khai STEM"><span>Mức 1<br>Bài học STEM</span><span>Mức 2<br>Trải nghiệm</span><span>Mức 3<br>Nghiên cứu KH-KT</span></div><span class="muted" style="font-size:12.5px">Ba mức triển khai giáo dục STEM theo Công văn 909/BGDĐT-GDTrH</span></div>
+      <div class="pq"><b>5. Số lớp đã tổ chức hoạt động STEM trong năm học trước *</b><div class="row" style="gap:6px;flex-wrap:nowrap"><input class="input num" id="pv5" value="40" style="max-width:110px" aria-label="Số lớp"><span class="muted">lớp</span></div><span class="perr">Số lớp có STEM (40) lớn hơn tổng số lớp đã khai ở câu 3 (32). Thầy cô kiểm tra lại giúp.</span></div>
+      <div class="pq"><b>8. Mức độ sẵn sàng của giáo viên *</b><span class="muted" style="font-size:12.5px">1 = Rất thấp · 5 = Rất cao</span><div class="tablewrap"><table class="mtx"><thead><tr><th></th>${sc.map(v=>`<th>${v}</th>`).join('')}</tr></thead><tbody>${[['Kiến thức về giáo dục STEM',3],['Kỹ năng tổ chức hoạt động',4],['Sử dụng thiết bị, bộ kit',2]].map(([r,v],i)=>`<tr><td>${r}</td>${sc.map(k=>`<td><input type="radio" name="m8_${i}" ${k===v?'checked':''} aria-label="${r}: ${k}"></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+      <div class="pq"><b>9. Mức độ đáp ứng cơ sở vật chất *</b><span class="muted" style="font-size:12.5px">0 Chưa có · 1 Có nhưng chưa đủ · 2 Đủ dùng · 3 Đủ và hiện đại · KDL Không có dữ liệu</span><div class="tablewrap"><table class="mtx"><thead><tr><th></th>${['0','1','2','3','KDL'].map(v=>`<th>${v}</th>`).join('')}</tr></thead><tbody>${[['Phòng học STEM',1],['Bộ kit robotics',0],['Máy in 3D',-1],['Kết nối Internet',2]].map(([r,v],i)=>`<tr><td>${r}</td>${[0,1,2,3,4].map(k=>`<td><input type="radio" name="m9_${i}" ${k===v?'checked':''} aria-label="${r}: mã ${k}"></td>`).join('')}</tr>`).join('')}</tbody></table></div><span class="muted" style="font-size:12.5px">Còn 1 dòng chưa chọn: Máy in 3D</span></div>
+      <div class="pq"><b>10. Kinh phí nhà trường có thể dành cho STEM mỗi năm</b><span class="muted" style="font-size:12.5px">Ước lượng, chưa cần chính xác</span><div class="row" style="gap:6px"><input class="input num" id="pv10a" value="50" style="max-width:80px" aria-label="Tối thiểu"><span class="muted">–</span><input class="input num" id="pv10b" value="30" style="max-width:80px" aria-label="Tối đa"><span class="muted">triệu đồng</span></div><span class="perr">Tối thiểu (50) đang lớn hơn tối đa (30).</span></div>
+      <div class="pq"><div class="pvid">▶ Giới thiệu mô hình câu lạc bộ STEM (3 phút)</div></div>
+      <div class="pvsave"><span>Đã tự lưu lúc 09:41</span><button class="link" data-toast="Mockup: đã sao chép link làm tiếp. Đồng nghiệp mở link sẽ thấy đúng phiếu đang làm dở">Gửi link làm tiếp cho đồng nghiệp</button></div>
+      <div class="row"><button class="btn ghost sm">Quay lại</button>${desk?'':'<button class="btn ghost sm" data-pvs="review">Kiểm tra</button>'}<button class="btn sm" style="margin-left:auto">Tiếp tục</button></div></div>`;
+    inner = `<div class="pvform">${rail}${qs}</div>`;
+  }
+  if(st==='review'){
+    const stt={5:'wn',9:'miss',10:'wn',11:'opt',12:'opt'};
+    inner=`<h2 style="margin:0">Kiểm tra các câu đã làm</h2><p class="muted" style="margin:0;font-size:13px">Bấm vào số câu để quay lại sửa.</p>
+    <div class="rgrid">${Array.from({length:nq},(_,i)=>{const k=stt[i+1]||'ok';return `<button class="${k}" data-pvs="form" aria-label="Câu ${i+1}">${i+1}</button>`}).join('')}</div>
+    <div class="legend2"><span><i style="background:var(--ok)"></i>Đã trả lời</span><span><i style="background:var(--bad)"></i>Bắt buộc, chưa làm</span><span><i style="background:var(--warn)"></i>Cần xem lại số liệu</span><span><i style="border:1px dashed var(--muted)"></i>Không bắt buộc, bỏ trống</span></div>
+    <div class="attn"><div><span><b>Câu 9</b> · còn dòng “Máy in 3D” chưa chọn mã</span><span class="chip warn" style="color:var(--bad);background:var(--bad-soft)">Phải làm</span></div><div><span><b>Câu 5</b> · 40 lớp có STEM &gt; 32 lớp ở câu 3</span><span class="chip warn">Xem lại</span></div><div><span><b>Câu 10</b> · tối thiểu lớn hơn tối đa</span><span class="chip warn">Xem lại</span></div></div>
+    <button class="btn" disabled style="justify-content:center" title="Còn 1 câu bắt buộc">Gửi phiếu</button><span class="muted" style="font-size:12.5px">Câu “Xem lại” chỉ nhắc, vẫn gửi được. Câu bắt buộc phải làm xong mới gửi.</span>`;
+  }
+  if(st==='done') inner=`<div style="text-align:center;display:grid;gap:8px;justify-items:center;padding:12px 0"><span style="width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok);font-size:26px;font-weight:700">✓</span><h2 style="margin:0">Cảm ơn thầy cô!</h2><span class="muted">Mã phiếu <b class="num">R-0129</b> · gửi lúc 09:52, 19/11/2026</span></div>
+    <button class="btn" style="justify-content:center" data-toast="Mockup: tải bản PDF đúng như phiếu đã gửi">${ic.dl}Tải phiếu đã gửi (PDF)</button>
+    <button class="btn ghost sm" style="justify-content:center" data-toast="Mockup: mở lại phiếu để sửa, còn mở đến 30/11">Sửa phiếu (còn mở đến 30/11)</button>`;
+  return `<div class="row" style="margin-bottom:12px"><div class="seg" role="group" aria-label="Thiết bị"><button class="${d==='phone'?'on':''}" data-dev="phone">Điện thoại</button><button class="${desk?'on':''}" data-dev="desk">Máy tính</button></div>
+    <div class="seg" role="group" aria-label="Màn hình người trả lời">${steps.map(([k,l])=>`<button class="${st===k?'on':''}" data-pvs="${k}">${l}</button>`).join('')}</div>
+    <select class="select" id="pvv" aria-label="Phiên bản xem trước"><option>Bản nháp hiện tại</option><option>Phiên bản 2 (đang dùng)</option></select><span class="muted">Câu trả lời ở đây không được lưu.</span></div>
+  <div class="detail"><div class="phone ${desk?'desk':''}">${inner}</div>
+   <section class="panel pad" style="display:grid;gap:12px"><h2>Kiểm tra logic</h2>
+    <dl class="kv"><dt>Câu đang hiện</dt><dd>${nq} / ${nq}</dd><dt>Phần</dt><dd>3</dd><dt>Lỗi nếu gửi ngay</dt><dd style="color:var(--warn)">1 câu bắt buộc chưa xong · 2 cảnh báo số liệu</dd></dl>
+    <div class="attn"><div><span>Câu 3 chỉ hiện khi <b>Câu 2 = THCS hoặc THPT</b></span><span class="chip open">Đang hiện</span></div></div>
+    <h3 style="margin:4px 0 0">Kiểm tra chéo đang bật</h3>
+    <div class="attn"><div><span>Câu 5 ≤ tổng “Số lớp” ở câu 3</span><span class="chip warn">Cảnh báo</span></div><div><span>Câu 10: tối thiểu ≤ tối đa</span><span class="chip warn">Cảnh báo</span></div><div><span>Ô phần trăm ≤ 100</span><span class="chip draft">Chặn gửi</span></div></div>
+    <div class="row"><label class="switch" for="showh"><input type="checkbox" id="showh">Hiện cả câu đang bị ẩn</label><button class="btn ghost sm" data-go="survey" data-wt="cd">Sửa quy tắc</button><button class="btn ghost sm" data-pvs="intro">Làm lại từ đầu</button></div></section></div>`;
+}function editSettings(){
+  const card=(t,inner,open)=>`<details class="card" ${open?'open':''}><summary>${t}</summary><div>${inner}</div></details>`;
+  return `<div class="grid">
+   ${card('Thông tin khảo sát',`<div class="fgrid"><label class="flabel" for="s1">Tên khảo sát<input class="input" id="s1" value="${esc(S().name)}"></label><label class="flabel" for="s2">Dự án / phòng ban<select class="select" id="s2"><option>${S().proj}</option></select></label><label class="flabel" for="s3">Danh mục<input class="input" id="s3" value="Giáo dục STEM"></label><label class="flabel" for="s4">Đường dẫn<input class="input" id="s4" value="nhu-cau-stem-2026"></label><label class="flabel" for="s5">Thời lượng dự kiến (phút)<input class="input" id="s5" value="8"></label></div>
+     <label class="flabel" for="s6">Mô tả<input class="input" id="s6" value="Khảo sát nhu cầu triển khai các chủ đề giáo dục STEM năm học 2026–2027."></label><label class="flabel" for="s7">Mục đích (nội bộ)<input class="input" id="s7" value="Lập kế hoạch tập huấn, học liệu và thiết bị."></label>`,true)}
+   ${card('Giao diện',`<div class="fgrid"><label class="flabel" for="g1">Mẫu màu<select class="select" id="g1"><option>KDI mặc định</option><option>Giáo dục</option><option>Chuyên nghiệp</option><option>Phản hồi khách hàng</option><option>Sự kiện</option><option>Nghiên cứu</option><option>Tối giản</option></select></label><label class="flabel" for="g2">Font chữ<select class="select" id="g2"><option>Be Vietnam Pro</option><option>Hệ thống</option><option>Có chân</option></select></label><label class="flabel" for="g3">Logo<input class="input" id="g3" value="Logo KDI (mặc định)"></label><label class="flabel" for="g4">Ảnh bìa<input class="input" id="g4" placeholder="Chưa có"></label></div>`)}
+   ${card('Trang giới thiệu & hoàn thành',`<div class="fgrid"><label class="flabel" for="i1">Tiêu đề giới thiệu<input class="input" id="i1" value="Khảo sát nhu cầu chủ đề STEM 2026–2027"></label><label class="flabel" for="i2">Tiêu đề hoàn thành<input class="input" id="i2" value="Cảm ơn thầy cô!"></label><label class="flabel" for="i3">Thông tin liên hệ<input class="input" id="i3" placeholder="Hotline / email hỗ trợ"></label></div><label class="flabel" for="i4">Lời cảm ơn<input class="input" id="i4" value="Cảm ơn bạn đã hoàn thành khảo sát!"></label>
+     <div class="row"><label class="switch" for="i5"><input type="checkbox" id="i5" checked>Thanh tiến độ</label><label class="switch" for="i6"><input type="checkbox" id="i6" checked>Màn hình xem lại trước khi gửi</label></div>`)}
+   ${card('Kiểm tra chéo giữa các câu',`<div class="tablewrap"><table style="min-width:560px"><thead><tr><th>Quy tắc</th><th>Khi sai</th><th class="c">Thao tác</th></tr></thead><tbody>
+     <tr><td>Câu 5 (số lớp có STEM) ≤ tổng cột “Số lớp” ở câu 3</td><td><select class="select" id="xr1"><option>Cảnh báo, vẫn cho gửi</option><option>Chặn gửi</option></select></td><td class="c"><button class="btn sm ghost">Xóa</button></td></tr>
+     <tr><td>Câu 10: Tối thiểu ≤ Tối đa</td><td><select class="select" id="xr2"><option>Cảnh báo, vẫn cho gửi</option><option>Chặn gửi</option></select></td><td class="c"><button class="btn sm ghost">Xóa</button></td></tr>
+     <tr><td>Mọi ô Phần trăm ≤ 100</td><td><select class="select" id="xr3"><option>Chặn gửi</option><option>Cảnh báo, vẫn cho gửi</option></select></td><td class="c"><button class="btn sm ghost">Xóa</button></td></tr></tbody></table></div>
+     <div class="row"><select class="select" id="xr4" aria-label="Câu"><option>Câu 3 · Số học sinh</option></select><select class="select" id="xr5" aria-label="Phép so sánh"><option>≥</option><option>≤</option><option>=</option></select><select class="select" id="xr6" aria-label="So với"><option>Câu 3 · Số lớp × 15</option></select><button class="btn sm">${ic.plus}Thêm quy tắc</button></div>`,true)}
+   ${card('Dữ liệu cá nhân',`<div class="row">${['4.1 Họ và tên','4.3 Số điện thoại','4.4 Email'].map(x=>`<span class="chip plain draft">${x}</span>`).join('')}<span class="muted" style="font-size:12.5px">Đánh dấu trong Tùy chọn nâng cao của từng câu.</span></div>
+     <label class="switch" for="pd1"><input type="checkbox" id="pd1" checked>Che với vai trò Phân tích (chỉ thấy “09** *** 412”)</label>
+     <label class="switch" for="pd2"><input type="checkbox" id="pd2" checked>Mặc định ẩn khi xuất dữ liệu</label>
+     <div class="fgrid"><label class="flabel" for="pd3">Tự xóa dữ liệu cá nhân sau khi kết thúc (ngày)<input class="input" id="pd3" value="365"></label></div>`)}
+   ${card('Phân quyền khảo sát',`<div class="tablewrap"><table style="min-width:520px"><thead><tr><th>Người dùng</th><th>Quyền trên khảo sát này</th><th class="c">Thao tác</th></tr></thead><tbody>
+     <tr><td><b>Quản trị KDI</b><div class="muted">admin@kdi.edu.vn</div></td><td>Chủ sở hữu</td><td class="c"></td></tr>
+     <tr><td><b>Chuyên viên phân tích</b><div class="muted">analyst@kdi.edu.vn</div></td><td><select class="select" id="pm1"><option>Phân tích (chỉ xem kết quả)</option><option>Biên tập</option></select></td><td class="c"><button class="btn sm ghost">Gỡ</button></td></tr></tbody></table></div>
+     <div class="row"><input class="select" id="pm2" placeholder="Email người dùng" style="flex:1 1 220px"><select class="select" id="pm3"><option>Biên tập</option><option>Phân tích</option></select><button class="btn sm">Thêm</button></div>`)}
+   ${card('Lịch sử phiên bản',`<div class="tablewrap"><table style="min-width:480px"><thead><tr><th>Phiên bản</th><th>Xuất bản lúc</th><th>Người xuất bản</th><th>Phản hồi</th></tr></thead><tbody><tr><td>Phiên bản 2</td><td class="num">05/11/2026 10:20</td><td>Quản trị KDI</td><td class="num">121</td></tr><tr><td>Phiên bản 1</td><td class="num">02/11/2026 08:00</td><td>Quản trị KDI</td><td class="num">7</td></tr></tbody></table></div>`)}
+   ${card('Dữ liệu',`<div class="fgrid"><label class="flabel" for="r1">Thời hạn lưu dữ liệu (ngày)<input class="input" id="r1" value="730"></label></div><div class="row"><button class="btn sm ghost" data-go="audit">Xem nhật ký thao tác của khảo sát</button></div>`)}
+  </div>`+note('Giữ đủ:','thông tin, giao diện, trang giới thiệu / hoàn thành, phân quyền theo khảo sát, lịch sử phiên bản, thời hạn lưu dữ liệu. Thêm: kiểm tra chéo giữa các câu, bảo vệ dữ liệu cá nhân.');
+}
+
+/* ---------- 3.1 phát hành ---------- */
+function vPublish(){
+  const m=state.mode;
+  const modes=[['public','Công khai','Ai có link đều trả lời được'],['unit','Theo danh mục đơn vị','Chọn trường từ danh sách, mỗi trường một phiếu'],['code','Mã truy cập','Nhập mã mới vào được'],['invite','Lời mời riêng','Mỗi đơn vị một link riêng']];
+  return head(`<button class="btn ghost" data-toast="Đã tạm dừng nhận trả lời">Tạm dừng nhận trả lời</button><button class="btn" data-toast="Đã lưu cấu hình">Lưu cấu hình</button>`)+picker()+
+  `<div class="two">
+    <section class="panel pad" style="display:grid;gap:14px">
+      <h2>Link khảo sát</h2>
+      <div class="copy"><input class="input" id="lnk" readonly value="https://khaosat.kdi.edu.vn/s/nhu-cau-stem-2026"><button class="btn" id="cp">${ic.copy}Sao chép</button></div>
+      <div class="row" style="align-items:flex-start"><canvas class="qr" id="qr" width="29" height="29" aria-label="Mã QR minh họa"></canvas>
+        <div style="display:grid;gap:8px;flex:1;min-width:180px"><b>Mã QR</b><span class="muted">In trên tài liệu, poster hoặc trình chiếu tại sự kiện.</span><div class="row" style="gap:6px"><button class="btn ghost sm">${ic.dl}PNG</button><button class="btn ghost sm">${ic.dl}SVG</button></div></div></div>
+      <h2 style="margin-top:6px">Phiếu trống để soạn trước</h2><span class="muted">Đơn vị tải về, họp tổ thống nhất số liệu rồi mới nhập lên hệ thống.</span>
+      <div class="row" style="gap:6px"><button class="btn ghost sm" data-toast="Mockup: tải phiếu trống Word">${ic.dl}Word</button><button class="btn ghost sm" data-toast="Mockup: tải phiếu trống PDF">${ic.dl}PDF</button></div>
+    </section>
+    <section class="panel pad" style="display:grid;gap:12px">
+      <h2>Ai được trả lời</h2>
+      <div class="modes">${modes.map(([k,t,d])=>`<button class="${m===k?'on':''}" data-mode="${k}"><b>${t}</b><small>${d}</small></button>`).join('')}</div>
+      ${m==='code'?`<label class="flabel" for="ac">Mã truy cập<input class="input" id="ac" value="STEM2026"></label>`:''}
+      ${m==='unit'?`<div class="fgrid"><label class="flabel" for="um1">Danh mục<select class="select" id="um1"><option>Trường / đơn vị TP Huế (186)</option></select></label><label class="flabel" for="um2">Chỉ mời<select class="select" id="um2"><option>Tất cả cấp học</option><option>THCS, THPT</option></select></label></div><span class="muted" style="font-size:12.5px">Trường đã có phiếu mà trả lời lại → mở phiếu cũ để sửa, không tạo phiếu trùng. Tiến độ tính theo danh mục nên biết ngay trường nào chưa làm.</span>`:''}
+      <h2 style="margin-top:6px">Giới hạn & thời gian</h2>
+      <div class="fgrid"><label class="flabel" for="t1">Mở từ<input class="input" id="t1" value="02/11/2026 08:00"></label><label class="flabel" for="t2">Tự động đóng lúc<input class="input" id="t2" value="30/11/2026 17:00"></label><label class="flabel" for="t3">Tối đa số phản hồi<input class="input" id="t3" placeholder="Không giới hạn"></label></div>
+      <label class="switch" for="t4"><input type="checkbox" id="t4" checked>Tự động lưu nháp và cho phép tiếp tục sau</label>
+      <label class="switch" for="t6"><input type="checkbox" id="t6" checked>Cho phép gửi link làm tiếp cho đồng nghiệp cùng đơn vị</label>
+      <label class="switch" for="t5"><input type="checkbox" id="t5">Mỗi thiết bị chỉ gửi một phản hồi (link công khai)</label>
+    </section>
+  </div>
+  ${m==='invite'?`<div class="phead" style="padding-top:20px"><h2 style="margin:0">Lời mời riêng <span class="muted" style="font-weight:400">(40)</span></h2><div class="actions"><button class="btn ghost">${ic.dl}Tải CSV link</button><button class="btn">${ic.plus}Tạo lời mời</button></div></div>
+  <div class="tablewrap"><table><thead><tr><th class="c">STT</th><th>Người nhận / đơn vị</th><th>Trạng thái</th><th>Tạo lúc</th><th>Hết hạn</th><th class="c">Thao tác</th></tr></thead><tbody>
+  ${[['THCS Lê Lợi','Đã trả lời'],['THCS Chu Văn An','Đã mở link'],['THCS Ngô Gia Tự','Chưa mở']].map((r,i)=>`<tr><td class="c">${i+1}</td><td><b>${r[0]}</b></td><td><span class="chip ${r[1]==='Đã trả lời'?'open':r[1]==='Đã mở link'?'warn':'draft'}">${r[1]}</span></td><td class="num">17/11/2026</td><td class="num">30/11/2026</td><td class="c"><button class="btn sm ghost">Sao chép</button> <button class="btn sm ghost">Thu hồi</button></td></tr>`).join('')}</tbody></table></div>`:''}`;
+}
+
+/* ---------- 3.2 theo dõi tiến độ ---------- */
+function vProgress(){
+  const s=S(); const p=pct(s.got,s.target);
+  const levels=[['Mầm non',18,24],['Tiểu học',52,60],['THCS',41,44],['THPT',17,22]];
+  const missing=[['MN Hoa Sen','Mầm non','Chưa mở link'],['MN Sơn Ca','Mầm non','Đang làm dở (60%)'],['TH Hùng Vương','Tiểu học','Chưa mở link'],['TH Đằng Hải','Tiểu học','Đang làm dở (35%)'],['THPT Thái Phiên','THPT','Chưa mở link']];
+  return head(`<button class="btn" data-go="report">Xem báo cáo</button>`)+picker()+
+  `<div class="two"><section class="panel pad" style="display:grid;gap:12px">
+      <h2>Tiến độ thu thập</h2>
+      <div class="row" style="align-items:baseline;gap:8px"><span class="num" style="font-size:28px;font-weight:700;color:var(--brand)">${s.got}/${s.target}</span><span class="muted">đơn vị đã trả lời (${p}%) · còn ${s.target-s.got} đơn vị · còn 12 ngày</span></div>
+      <div class="bar" style="height:12px"><i style="width:${p}%"></i></div>
+      <div class="hbars">${levels.map(([l,a,b])=>`<div class="hb"><span>${l}</span><div class="tr"><i style="width:${a/b*100}%;background:var(--c1)"></i></div><span class="vv">${a}/${b}</span></div>`).join('')}</div></section>
+    <section class="panel pad"><h2>Phản hồi mỗi ngày</h2>${cols([4,18,26,15,9,22,12,8,14],['2/11','4','6','8','10','12','14','16','18'])}</section></div>
+  <div class="phead" style="padding-top:20px"><h2 style="margin:0">Đơn vị chưa hoàn thành <span class="muted" style="font-weight:400">(${s.target-s.got})</span></h2><div class="actions"><button class="btn ghost">${ic.dl}Tải danh sách</button><button class="btn" data-toast="Mockup: sẽ gửi nhắc tới ${s.target-s.got} đơn vị">${ic.bell}Nhắc tất cả</button></div></div>
+  <div class="tablewrap"><table><thead><tr><th class="c">STT</th><th>Đơn vị</th><th>Cấp học</th><th>Tình trạng</th><th class="c">Thao tác</th></tr></thead><tbody>
+  ${missing.map((m,i)=>`<tr><td class="c">${i+1}</td><td><b>${m[0]}</b></td><td>${m[1]}</td><td><span class="chip ${m[2].startsWith('Đang')?'warn':'draft'}">${m[2]}</span></td><td class="c"><button class="btn ghost sm" data-toast="Mockup: sẽ nhắc ${m[0]}">Nhắc</button></td></tr>`).join('')}
+  <tr><td colspan="5" class="muted c">… và ${s.target-s.got-missing.length} đơn vị khác</td></tr></tbody></table></div>`;
+}
+
+/* ---------- 3.3 danh sách phản hồi ---------- */
+const RESP=[['R-0128','THCS Lê Lợi','Đã gửi','18/11 09:31','6 phút','Hợp lệ',''],['R-0127','TH Ngô Quyền','Đã gửi','18/11 08:52','8 phút','Hợp lệ',''],['R-0126','THCS Lê Lợi','Đã gửi','18/11 08:40','2 phút','Gắn cờ','Trùng trường'],['R-0125','THPT Trần Phú','Đang làm dở','18/11 08:10','—','',''],['R-0124','MN Hoa Mai','Đã gửi','17/11 16:05','9 phút','Hợp lệ','Có ghi chú']];
+function vResponses(){
+  const r=RESP[state.resp];
+  return head(`<button class="btn ghost" data-go="export">${ic.dl}Xuất dữ liệu</button>`)+picker()+
+  `<div class="filters" style="padding-top:0">
+    <label class="field" for="rs1"><b>Trạng thái:</b><select class="select" id="rs1"><option>Mọi trạng thái</option><option>Đã gửi</option><option>Đang làm dở</option></select></label>
+    <label class="field" for="rs2"><b>Xác minh:</b><select class="select" id="rs2"><option>Mọi phản hồi</option><option>Hợp lệ (không gắn cờ)</option><option>Đã gắn cờ</option><option>Có ghi chú</option></select></label>
+    <label class="field" for="rs3"><b>Lọc theo câu trả lời:</b><select class="select" id="rs3"><option>Không lọc</option><option>Câu 2 = THCS</option></select></label>
+    <input class="select" id="rs4" placeholder="Mã phản hồi, tên trường, nội dung" style="flex:1 1 200px;max-width:300px"></div>
+  <div class="detail"><div class="tablewrap"><table style="min-width:600px"><thead><tr><th>Mã</th><th>Đơn vị</th><th>Trạng thái</th><th>Gửi lúc</th><th>Thời lượng</th><th>Xác minh</th></tr></thead><tbody>
+   ${RESP.map((x,i)=>`<tr style="cursor:pointer" data-resp="${i}" ${i===state.resp?'class="sel"':''}><td><button class="link" data-resp="${i}">${x[0]}</button></td><td>${x[1]}</td><td><span class="chip ${x[2]==='Đã gửi'?'open':'warn'}">${x[2]}</span></td><td class="num">${x[3]}</td><td class="num">${x[4]}</td><td>${x[5]==='Gắn cờ'?`<span class="chip warn">Gắn cờ: ${x[6]}</span>`:x[5]?`<span class="chip closed">${x[5]}</span>${x[6]?' <span class="muted">· '+x[6]+'</span>':''}`:'<span class="muted">—</span>'}</td></tr>`).join('')}
+   </tbody></table><div class="row" style="justify-content:space-between;padding:10px 12px;border-top:1px solid var(--line)"><span class="muted">1–5 / 128</span><span class="row" style="gap:6px"><button class="btn sm ghost">Trang trước</button><button class="btn sm ghost">Trang sau</button></span></div></div>
+   <section class="panel pad" style="display:grid;gap:12px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Phiếu ${r[0]}</h2><button class="btn ghost sm" data-toast="Mockup: tải phiếu ${r[0]} dạng PDF, đúng như người trả lời đã thấy">${ic.dl}Tải phiếu PDF</button></div>
+     <span class="chip plain draft" style="justify-self:start" title="Vai trò Phân tích không xem được dữ liệu cá nhân">Đang che dữ liệu cá nhân · vai trò Phân tích</span>
+     <dl class="kv"><dt>Đơn vị</dt><dd>${r[1]}</dd><dt>Bắt đầu / gửi</dt><dd class="num">${r[3]}</dd><dt>Thời lượng</dt><dd>${r[4]}</dd><dt>Phiên bản</dt><dd>2</dd><dt>Người phụ trách</dt><dd class="mask">Ng*** T*** H***</dd><dt>Số điện thoại</dt><dd class="mask">09** *** 412</dd><dt>Cấp học</dt><dd>THCS</dd><dt>Chủ đề quan tâm</dt><dd>Robotics & lập trình; Trí tuệ nhân tạo</dd><dt>Hình thức</dt><dd>Câu lạc bộ</dd><dt>Mức sẵn sàng</dt><dd>Kiến thức 3 · Tổ chức 4 · Thiết bị 2</dd><dt>Kiểm tra chéo</dt><dd>${state.resp===2?'<span class="chip warn">Câu 5 &gt; tổng số lớp</span>':'<span class="chip open">Không có cảnh báo</span>'}</dd></dl>
+     <h3 style="margin:4px 0 0">Xác minh</h3>
+     <div class="fgrid"><label class="flabel" for="v1">Kết quả<select class="select" id="v1"><option ${r[5]!=='Gắn cờ'?'selected':''}>Hợp lệ</option><option ${r[5]==='Gắn cờ'?'selected':''}>Gắn cờ</option></select></label><label class="flabel" for="v2">Lý do<input class="input" id="v2" value="${r[6]==='Trùng trường'?'Trùng trường':''}" placeholder="VD: trùng trường, dữ liệu thử"></label></div>
+     <label class="flabel" for="v3">Ghi chú nội bộ<input class="input" id="v3"></label>
+     <div><button class="btn sm" data-toast="Đã lưu xác minh">Lưu xác minh</button></div></section></div>`;
+}
+
+/* ---------- 4.x báo cáo ---------- */
+const TOPICS=[['Robotics & lập trình',87],['Năng lượng tái tạo',64],['Trí tuệ nhân tạo',58],['Khoa học môi trường',41],['In 3D & thiết kế',29]];
+const FORMS=[['Câu lạc bộ',59,'var(--c1)'],['Tích hợp trong tiết học',44,'var(--c2)'],['Trải nghiệm ngoại khóa',25,'var(--c3)']];
+const READY=[6,22,41,39,20];
+function hbars(rows,total,color='var(--c1)'){const mx=Math.max(...rows.map(r=>r[1]));return `<div class="hbars">${rows.map(([l,v])=>`<div class="hb"><span>${l}</span><div class="tr"><i style="width:${v/mx*100}%;background:${color}"></i></div><span class="vv">${v} · ${Math.round(v/total*100)}%</span></div>`).join('')}</div>`}
+function donut(rows){const tot=rows.reduce((a,r)=>a+r[1],0);let acc=0;const stops=rows.map(r=>{const a=acc/tot*360;acc+=r[1];return `${r[2]} ${a}deg ${acc/tot*360}deg`}).join(',');
+  return `<div class="row" style="gap:20px"><div class="donut" style="background:conic-gradient(${stops})" role="img" aria-label="Biểu đồ tròn"></div><div class="legend">${rows.map(r=>`<span><i style="background:${r[2]}"></i>${r[0]} <b class="num">${Math.round(r[1]/tot*100)}%</b></span>`).join('')}</div></div>`}
+function cols(vals,labels){const mx=Math.max(...vals);return `<div class="cols">${vals.map(v=>`<div><span class="num">${v}</span><i style="height:${v/mx*82}%"></i></div>`).join('')}</div><div class="colx">${labels.map(l=>`<span>${l}</span>`).join('')}</div>`}
+function vReport(){
+  const s=S(); const N=s.got;
+  const tabs=[['tong','Tổng hợp chung'],['cau','Từng câu hỏi'],['nhom','So sánh theo nhóm'],['ykien','Ý kiến góp ý'],['pt','Phân tích chi tiết'],['xuat','Xuất dữ liệu']];
+  let body='';
+  if(state.rtab==='tong') body=`
+    <div class="kpis">
+      <div class="panel kpi"><div class="label">Đã trả lời</div><div class="v">${N}/${s.target}</div><div class="s">${pct(N,s.target)}% số đơn vị được mời</div></div>
+      <div class="panel kpi"><div class="label">Trả lời đầy đủ</div><div class="v">96%</div><div class="s">5 phiếu bỏ trống câu không bắt buộc</div></div>
+      <div class="panel kpi"><div class="label">Thời gian làm trung bình</div><div class="v">7 phút</div><div class="s">Dự kiến 8 phút</div></div>
+      <div class="panel kpi"><div class="label">Ý kiến góp ý</div><div class="v">21</div><div class="s">Đã nhóm thành 4 chủ đề</div></div>
+    </div>
+    <div class="two" style="margin-top:14px">
+      <section class="panel pad"><h2>Điểm chính rút ra</h2><ul class="insight">
+        <li><b class="k">1</b><span><b>Robotics & lập trình</b> được quan tâm nhiều nhất: 87/128 trường (68%), cao nhất ở THCS.</span></li>
+        <li><b class="k">2</b><span>Gần một nửa (46%) muốn triển khai theo hình thức <b>câu lạc bộ</b>.</span></li>
+        <li><b class="k">3</b><span>Mức sẵn sàng của giáo viên trung bình <b>3,3/5</b>; 22% tự đánh giá ở mức 1–2, nên ưu tiên tập huấn.</span></li>
+        <li><b class="k">4</b><span>Còn <b>22 đơn vị</b> chưa trả lời, phần lớn là trường mầm non.</span></li></ul>
+        <p class="muted" style="font-size:12.5px;margin:10px 0 0">Hệ thống tự viết các câu này từ số liệu, người dùng có thể sửa trước khi xuất báo cáo.</p></section>
+      <section class="panel pad"><h2>Chủ đề STEM được quan tâm</h2>${hbars(TOPICS,N)}<p class="muted" style="font-size:12.5px;margin:10px 0 0">Câu hỏi chọn nhiều: tổng phần trăm vượt 100%.</p></section>
+    </div>`;
+  if(state.rtab==='cau') body=`<div class="qgrid">
+    <section class="panel qcard"><div class="meta"><b style="color:var(--fg)">Câu 6.</b> Chủ đề STEM nhà trường quan tâm <span class="chip plain closed">Chọn nhiều</span> ${N} trả lời</div>${hbars(TOPICS,N)}</section>
+    <section class="panel qcard"><div class="meta"><b style="color:var(--fg)">Câu 7.</b> Hình thức triển khai mong muốn <span class="chip plain closed">Chọn một</span> ${N} trả lời</div>${donut(FORMS)}</section>
+    <section class="panel qcard"><div class="meta"><b style="color:var(--fg)">Câu 8.</b> Mức độ sẵn sàng của giáo viên <span class="chip plain closed">Ma trận đánh giá 1–5</span> điểm trung bình từng dòng</div>
+      <div class="hbars">${[['Kiến thức về giáo dục STEM',3.4],['Kỹ năng tổ chức hoạt động',3.5],['Sử dụng thiết bị, bộ kit',2.9]].map(([l,v])=>`<div class="hb"><span>${l}</span><div class="tr"><i style="width:${v/5*100}%;background:${v<3?'var(--c5)':'var(--c1)'}"></i></div><span class="vv">${String(v).replace('.',',')} / 5</span></div>`).join('')}</div></section>
+    <section class="panel qcard"><div class="meta"><b style="color:var(--fg)">Câu 9.</b> Mức độ đáp ứng cơ sở vật chất <span class="chip plain closed">Ma trận chọn mã</span> tỉ lệ từng mã theo dòng</div>
+      <div style="display:grid;gap:8px">${[['Phòng học STEM',[28,41,23,8,0]],['Bộ kit robotics',[46,33,15,4,2]],['Máy in 3D',[71,14,6,1,8]],['Kết nối Internet',[2,18,55,25,0]]].map(([l,v])=>`<div class="sb"><span>${l}</span><div class="stack" role="img" aria-label="${l}: ${v.map((p,i)=>['0','1','2','3','KDL'][i]+' '+p+'%').join(', ')}">${v.map((p,i)=>`<i style="width:${p}%;background:${['var(--c5)','var(--c2)','var(--c1)','var(--c3)','var(--line)'][i]}" title="Mã ${['0','1','2','3','KDL'][i]}: ${p}%"></i>`).join('')}</div></div>`).join('')}
+      <div class="legend2">${['0 Chưa có','1 Chưa đủ','2 Đủ dùng','3 Hiện đại','KDL'].map((t,i)=>`<span><i style="background:${['var(--c5)','var(--c2)','var(--c1)','var(--c3)','var(--line)'][i]}"></i>${t}</span>`).join('')}</div></div></section>
+    <section class="panel qcard"><div class="meta"><b style="color:var(--fg)">Câu 3.</b> Số lớp và số học sinh theo khối <span class="chip plain closed">Bảng số liệu</span> tổng hợp cộng dồn</div>
+      <div class="tablewrap"><table style="min-width:420px"><thead><tr><th>Khối</th><th class="c">Tổng số lớp</th><th class="c">Tổng số HS</th><th class="c">Số trường có khối</th></tr></thead><tbody>
+      ${[['Khối 6',312,'12.480',41],['Khối 7',298,'11.920',41],['Khối 8',287,'11.336',41],['Khối 9',276,'10.764',41]].map(r=>`<tr><td>${r[0]}</td><td class="c num">${r[1]}</td><td class="c num">${r[2]}</td><td class="c num">${r[3]}</td></tr>`).join('')}<tr><td><b>Tổng</b></td><td class="c num"><b>1.173</b></td><td class="c num"><b>46.500</b></td><td></td></tr></tbody></table></div></section>
+    <section class="panel qcard"><div class="meta"><b style="color:var(--fg)">Câu 5 và 10.</b> Câu nhập số <span class="chip plain closed">Số · Khoảng số</span></div>
+      <div class="tablewrap"><table style="min-width:420px"><thead><tr><th>Chỉ số</th><th class="c">Nhỏ nhất</th><th class="c">Trung bình</th><th class="c">Lớn nhất</th></tr></thead><tbody>
+      <tr><td>Câu 5 · Số lớp có STEM</td><td class="c num">0</td><td class="c num">8,2</td><td class="c num">36</td></tr><tr><td>Câu 10 · Kinh phí tối thiểu (tr.đ)</td><td class="c num">5</td><td class="c num">42</td><td class="c num">200</td></tr><tr><td>Câu 10 · Kinh phí tối đa (tr.đ)</td><td class="c num">10</td><td class="c num">75</td><td class="c num">350</td></tr></tbody></table></div>
+      <span class="muted" style="font-size:12.5px">3 phiếu bị cảnh báo kiểm tra chéo (câu 5 &gt; tổng số lớp) · 12 trường bỏ trống câu 10.</span></section></div>`;  if(state.rtab==='nhom'){
+    const lv=[['Mầm non',18,[39,61,22,44,11]],['Tiểu học',52,[65,48,40,31,19]],['THCS',41,[83,46,58,29,32]],['THPT',17,[76,41,71,24,35]]];
+    const shade=v=>`color-mix(in srgb, var(--c1) ${Math.round(v*0.85)}%, var(--surface))`;
+    body=`<div class="filters"><label class="field" for="g1x"><b>So sánh theo:</b><select class="select" id="g1x"><option>Cấp học</option><option>Cụm trường</option><option>Loại trường</option></select></label><label class="field" for="g2x"><b>Câu hỏi:</b><select class="select" id="g2x"><option>Câu 6. Chủ đề STEM quan tâm</option><option>Câu 7. Hình thức triển khai</option></select></label></div>
+    <div class="tablewrap heat"><table><thead><tr><th>Cấp học</th><th class="c">Số trường</th>${TOPICS.map(t=>`<th class="c">${t[0]}</th>`).join('')}</tr></thead><tbody>
+    ${lv.map(([l,n,v])=>`<tr><td><b>${l}</b></td><td class="c num">${n}</td>${v.map(x=>`<td class="h" style="background:${shade(x)};color:${x>55?'#fff':'var(--fg)'}">${x}%</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div><p class="muted" style="font-size:12.5px">Ô càng đậm, tỉ lệ trường chọn chủ đề đó càng cao. Đọc ngang để biết mỗi cấp học quan tâm gì nhất.</p>`;
+  }
+  if(state.rtab==='ykien'){
+    const g=[['Tập huấn giáo viên',9,['Mong muốn có thêm tập huấn giáo viên về robotics và lập trình.','Giáo viên còn thiếu kinh nghiệm, cần có người hướng dẫn trong học kỳ đầu.']],['Thiết bị, phòng STEM',6,['Nhà trường cần hỗ trợ thiết bị cho phòng STEM, đặc biệt là bộ kit năng lượng tái tạo.']],['Chi phí',4,['Chi phí cần hợp lý để phụ huynh đồng thuận, ưu tiên mô hình câu lạc bộ.']],['Nội dung mới',2,['Đề xuất thêm chủ đề trí tuệ nhân tạo cho học sinh THCS.']]];
+    body=`<div class="two"><section class="panel pad"><h2>21 ý kiến, chia theo chủ đề</h2>${hbars(g.map(x=>[x[0],x[1]]),21,'var(--c2)')}<p class="muted" style="font-size:12.5px;margin:10px 0 0">Hệ thống gợi ý nhóm theo từ khóa, người dùng chuyển ý kiến sang nhóm khác nếu cần.</p></section>
+      <section class="panel pad">${g.map(x=>`<h3>${x[0]} <span class="muted" style="font-weight:400">(${x[1]})</span></h3>${x[2].map(q=>`<p class="quote">${q}</p>`).join('')}`).join('')}</section></div>`;
+  }
+  if(state.rtab==='pt') body=vAnalysis();
+  if(state.rtab==='xuat') body=vExport();
+  return head(`<button class="btn ghost" data-go="analysis">Phân tích chi tiết</button><button class="btn" data-go="export">${ic.dl}Xuất báo cáo</button>`)+picker()+
+   `<div class="rtabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${state.rtab===k}" class="rtab ${state.rtab===k?'on':''}" data-rt="${k}">${l}</button>`).join('')}</div>`+body;
+}
+function vAnalysis(){
+  return head(`<button class="btn" data-go="export">${ic.dl}Xuất dữ liệu</button>`)+picker()+
+  `<div class="filters" style="padding-top:0">
+    <label class="field" for="a1"><b>Phiên bản:</b><select class="select" id="a1"><option>Mọi phiên bản</option><option>Phiên bản 2</option><option>Phiên bản 1</option></select></label>
+    <label class="field" for="a2"><b>Phần:</b><select class="select" id="a2"><option>Mọi phần</option><option>Phần 1</option><option>Phần 2</option><option>Phần 3</option></select></label>
+    <label class="field" for="a3"><b>Từ ngày:</b><input type="date" class="select" id="a3" value="2026-11-02"></label>
+    <label class="field" for="a4"><b>Đến ngày:</b><input type="date" class="select" id="a4" value="2026-11-18"></label>
+    <label class="switch" for="a5"><input type="checkbox" id="a5">Gồm phản hồi dở dang</label>
+    <label class="switch" for="a6"><input type="checkbox" id="a6">Gồm phản hồi gắn cờ</label></div>
+  <div class="kpis">
+    <div class="panel kpi"><div class="label">Lượt bắt đầu</div><div class="v">141</div></div>
+    <div class="panel kpi"><div class="label">Đã gửi</div><div class="v">128</div></div>
+    <div class="panel kpi"><div class="label">Đang làm dở</div><div class="v">13</div></div>
+    <div class="panel kpi"><div class="label">Tỷ lệ hoàn thành</div><div class="v">91%</div></div>
+    <div class="panel kpi"><div class="label">Thời gian trả lời</div><div class="v">7 phút</div><div class="s">trung vị</div></div></div>
+  <div class="two" style="margin-top:14px">
+    <section class="panel pad"><h2>Tỷ lệ bỏ dở theo phần</h2>${hbars([['Phần 1. Thông tin nhà trường',3],['Phần 2. Nhu cầu chủ đề',8],['Phần 3. Góp ý',2]],141,'var(--c5)')}<p class="muted" style="font-size:12.5px;margin:10px 0 0">Phần 2 có nhiều người dừng lại nhất, nên xem lại độ dài câu 6.</p></section>
+    <section class="panel pad"><h2>Phân tách theo… (bảng chéo)</h2>
+      <div class="row" style="margin-bottom:10px"><select class="select" id="a7" aria-label="Câu hỏi"><option>Câu 7. Hình thức triển khai</option></select><span class="muted">theo</span><select class="select" id="a8" aria-label="Phân tách theo"><option>Câu 2. Cấp học</option></select></div>
+      <div class="tablewrap"><table style="min-width:420px"><thead><tr><th></th><th class="c">MN</th><th class="c">TH</th><th class="c">THCS</th><th class="c">THPT</th></tr></thead><tbody>
+      <tr><td>Câu lạc bộ</td><td class="c num">39%</td><td class="c num">44%</td><td class="c num">51%</td><td class="c num">47%</td></tr><tr><td>Tích hợp trong tiết học</td><td class="c num">22%</td><td class="c num">38%</td><td class="c num">34%</td><td class="c num">35%</td></tr><tr><td>Trải nghiệm ngoại khóa</td><td class="c num">39%</td><td class="c num">18%</td><td class="c num">15%</td><td class="c num">18%</td></tr></tbody></table></div></section></div>`;
+}
+function vExport(){
+  const e=[['Báo cáo tổng hợp (Word)','Điểm chính, biểu đồ từng câu, bảng so sánh. Dùng gửi lãnh đạo.','w'],['Excel đầy đủ','Mỗi phiếu một dòng, mỗi câu một cột, kèm mã câu hỏi.','x'],['Bảng tổng hợp theo đơn vị (Excel)','Mỗi trường một dòng, có cột cấp học, cụm trường.','x'],['Danh sách chưa trả lời (Excel)','Để gọi điện hoặc nhắc lại.','x'],['Dữ liệu CSV','Dùng cho Power BI hoặc phần mềm thống kê.','x'],['Phiếu đã gửi (PDF)','Từng phiếu đúng như người trả lời đã thấy, gộp thành một file nén.','p']];
+  return head()+picker()+`<div class="filters" style="padding-top:0"><label class="switch" for="e1"><input type="checkbox" id="e1">Gồm phản hồi dở dang</label><label class="switch" for="e2"><input type="checkbox" id="e2">Gồm phản hồi gắn cờ</label><label class="switch" for="e3"><input type="checkbox" id="e3" checked>Ẩn dữ liệu cá nhân (họ tên, số điện thoại, email)</label></div>
+  <div class="export">${e.map(x=>`<div class="panel pad" style="display:grid;gap:10px"><div class="row"><span class="fico ${x[2]}">${x[2]==='w'?'DOCX':x[2]==='p'?'PDF':x[0].includes('CSV')?'CSV':'XLSX'}</span><b style="flex:1;min-width:0">${x[0]}</b></div><span class="muted">${x[1]}</span><div><button class="btn sm" data-toast='Mockup: sẽ tải "${x[0]}"'>${ic.dl}Tải xuống</button></div></div>`).join('')}</div>`+
+  note('Kết nối:','dữ liệu tổng hợp vẫn đưa sang Power BI như bản cũ (docs/POWER_BI.md), và có thể nối vào phần Báo cáo của hệ thống chung.');
+}
+
+/* ---------- 5. thư viện mẫu ---------- */
+function templateCards(pick){
+  const t=[['Khảo sát nhu cầu chủ đề STEM','Giáo dục STEM',17,8,'var(--c1)','Mẫu hệ thống'],['Khảo sát hài lòng khóa học','Mức độ hài lòng',12,3,'var(--c3)','Mẫu hệ thống'],['Đăng ký tham gia sự kiện','Đăng ký',8,2,'var(--c4)','Mẫu hệ thống'],['Đánh giá tập huấn giáo viên','Mức độ hài lòng',14,5,'var(--c2)','Mẫu của đơn vị']];
+  return `<div class="cardgrid">${t.map(x=>`<div class="panel tcard"><span class="swatch" style="background:${x[4]}"></span><b>${x[0]}</b><span class="muted">${x[1]} · ${x[2]} câu · khoảng ${x[3]} phút</span><span class="chip plain ${x[5]==='Mẫu hệ thống'?'closed':'draft'}" style="justify-self:start">${x[5]}</span>
+    <div class="row" style="gap:6px"><button class="btn sm" data-go="edit" data-sid="4">Dùng mẫu này</button><button class="btn sm ghost">Xem trước</button>${!pick&&x[5]!=='Mẫu hệ thống'?'<button class="btn sm ghost">Xóa</button>':''}</div></div>`).join('')}</div>`;
+}
+function vTemplates(){
+  return head(`<button class="btn ghost" data-toast="Mockup: chọn một khảo sát để lưu làm mẫu">Lưu khảo sát thành mẫu</button>`)+
+  `<div class="filters"><label class="field" for="tp1"><b>Danh mục:</b><select class="select" id="tp1"><option>Tất cả</option><option>Giáo dục STEM</option><option>Mức độ hài lòng</option><option>Đăng ký</option></select></label></div>`+templateCards(false)+
+  note('Mỗi khảo sát tạo từ mẫu là một bản sao riêng:','sửa khảo sát không làm đổi mẫu gốc.');
+}
+
+/* ---------- 6. quản trị ---------- */
+function vUsers(){
+  const u=[['Quản trị KDI','admin@kdi.edu.vn','Super Admin','Hôm nay 09:42'],['Chuyên viên phân tích','analyst@kdi.edu.vn','Thành viên','Hôm nay 08:15'],['Phụ trách đào tạo','daotao@kdi.edu.vn','Quản trị','Hôm qua'],['Giáo viên phụ trách STEM','gv.stem@kdi.edu.vn','Thành viên','12/11/2026']];
+  return head(`<button class="btn">${ic.plus}Thêm người dùng</button>`)+
+  `<div class="filters"><input class="select" id="u0" placeholder="Tìm theo tên hoặc email" style="flex:1 1 220px;max-width:340px"><label class="field" for="u1"><b>Vai trò:</b><select class="select" id="u1"><option>Tất cả</option><option>Super Admin</option><option>Quản trị</option><option>Thành viên</option></select></label></div>
+  <div class="tablewrap"><table><thead><tr><th class="c">STT</th><th>Người dùng</th><th>Email</th><th>Vai trò hệ thống</th><th>Hoạt động gần nhất</th><th class="c">Thao tác</th></tr></thead><tbody>
+  ${u.map((x,i)=>`<tr><td class="c">${i+1}</td><td><b>${x[0]}</b></td><td class="muted">${x[1]}</td><td><select class="select" id="ur${i}" aria-label="Vai trò của ${x[0]}">${['Super Admin','Quản trị','Thành viên'].map(r=>`<option ${r===x[2]?'selected':''}>${r}</option>`).join('')}</select></td><td class="num">${x[3]}</td><td class="c"><button class="btn sm ghost">Khóa</button></td></tr>`).join('')}</tbody></table></div>
+  <div class="two" style="margin-top:14px"><section class="panel pad"><h2>Vai trò hệ thống làm được gì</h2><dl class="kv"><dt>Super Admin</dt><dd>Toàn quyền, kể cả cài đặt chung và người dùng</dd><dt>Quản trị</dt><dd>Tạo, sửa, phát hành mọi khảo sát; xem nhật ký</dd><dt>Thành viên</dt><dd>Chỉ thấy khảo sát mình tạo hoặc được thêm vào</dd></dl></section>
+  <section class="panel pad"><h2>Quyền theo từng khảo sát</h2><p class="muted" style="margin:0">Đặt trong <b>hồ sơ khảo sát → tab Cài đặt → Phân quyền</b>: Chủ sở hữu, Biên tập, Phân tích (chỉ xem kết quả).</p><div style="margin-top:10px"><button class="btn sm ghost" data-go="edit" data-etab="st">Mở thử</button></div></section></div>`+
+  note('Khi gắn vào hệ thống chung:','người dùng đăng nhập bằng tài khoản của hệ thống chung, trang này chỉ còn phần gán vai trò khảo sát.');
+}
+function vProjects(){
+  return head(`<button class="btn">${ic.plus}Thêm dự án</button>`)+
+  `<div class="tablewrap"><table><thead><tr><th class="c">STT</th><th>Dự án / phòng ban</th><th>Phụ trách</th><th class="c">Số khảo sát</th><th class="c">Đang thu thập</th><th class="c">Thao tác</th></tr></thead><tbody>
+  ${[['Giáo dục STEM 2026–2027','Quản trị KDI',5,2],['Đào tạo & sự kiện','Phụ trách đào tạo',6,1],['Giáo dục STEM 2025–2026','Quản trị KDI',1,0]].map((x,i)=>`<tr><td class="c">${i+1}</td><td><b>${x[0]}</b></td><td>${x[1]}</td><td class="c num">${x[2]}</td><td class="c num">${x[3]}</td><td class="c"><button class="btn sm ghost">Đổi tên</button> <button class="btn sm ghost" data-go="list">Xem khảo sát</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+function vUnits(){
+  const u=[['HUE-THCS-012','THCS Lê Lợi','THCS','Phường Thuận Hóa','Cụm 1','Ng*** T*** H***',3],['HUE-TH-031','TH Ngô Quyền','Tiểu học','Phường Phú Xuân','Cụm 2','Tr*** V*** A***',2],['HUE-THPT-004','THPT Trần Phú','THPT','Phường Vỹ Dạ','Cụm 1','Lê T*** M***',1],['HUE-MN-087','MN Hoa Mai','Mầm non','Phường Thủy Xuân','Cụm 3','Ph*** T*** L***',2],['HUE-THCS-045','THCS Chu Văn An','THCS','Phường An Cựu','Cụm 2','—',0]];
+  return head(`<button class="btn ghost" data-toast="Mockup: tải file Excel mẫu">${ic.dl}Tải file mẫu</button><button class="btn" data-toast="Mockup: chọn file Excel danh sách trường">${ic.up}Nhập từ Excel</button><button class="btn ghost">${ic.plus}Thêm đơn vị</button>`)+
+  `<div class="pending">2 đơn vị do người trả lời tự thêm đang chờ duyệt<button class="btn sm" data-toast="Mockup: mở danh sách chờ duyệt (gộp vào đơn vị có sẵn hoặc thêm mới)">Xem và duyệt</button></div>
+  <div class="filters" style="padding-top:0"><input class="select" id="un0" placeholder="Tìm theo tên hoặc mã đơn vị" style="flex:1 1 220px;max-width:340px"><label class="field" for="un1"><b>Cấp học:</b><select class="select" id="un1"><option>Tất cả</option><option>Mầm non</option><option>Tiểu học</option><option>THCS</option><option>THPT</option></select></label><label class="field" for="un2"><b>Xã / phường:</b><select class="select" id="un2"><option>Tất cả</option></select></label><label class="field" for="un3"><b>Cụm:</b><select class="select" id="un3"><option>Tất cả</option><option>Cụm 1</option><option>Cụm 2</option><option>Cụm 3</option></select></label></div>
+  <div class="tablewrap"><table><thead><tr><th class="c">STT</th><th>Mã đơn vị</th><th>Tên đơn vị</th><th>Cấp học</th><th>Xã / phường</th><th>Cụm</th><th>Người liên hệ</th><th class="c">Đã tham gia</th><th class="c">Thao tác</th></tr></thead><tbody>
+  ${u.map((x,i)=>`<tr><td class="c">${i+1}</td><td class="num muted">${x[0]}</td><td><b>${x[1]}</b></td><td>${x[2]}</td><td>${x[3]}</td><td>${x[4]}</td><td class="mask">${x[5]}</td><td class="c num">${x[6]} khảo sát</td><td class="c"><button class="btn sm ghost">Sửa</button></td></tr>`).join('')}
+  <tr><td colspan="9" class="muted c">… 181 đơn vị khác · tổng 186</td></tr></tbody></table></div>`+
+  note('Dùng chung cho mọi khảo sát:','người trả lời chọn trường từ danh sách nên tên thống nhất, không gõ sai; biết ngay trường nào chưa trả lời; so sánh qua các năm theo mã đơn vị. Người liên hệ được che với vai trò không phải quản trị.');
+}
+function vAudit(){
+  const a=[['18/11/2026 09:42','Quản trị KDI','Xuất bản phiên bản 3','Đăng ký tham gia Ngày hội STEM'],['18/11/2026 08:15','Chuyên viên phân tích','Gắn cờ phản hồi R-0126','Khảo sát nhu cầu chủ đề STEM 2026–2027'],['17/11/2026 15:30','Quản trị KDI','Tạo 40 lời mời riêng','Khảo sát nhu cầu chủ đề STEM 2026–2027'],['17/11/2026 10:02','Quản trị KDI','Tạm dừng khảo sát','Khảo sát hài lòng khóa học Robotics'],['16/11/2026 14:11','Super Admin','Đổi vai trò người dùng','Phụ trách đào tạo → Quản trị']];
+  return head(`<button class="btn ghost">${ic.dl}Tải nhật ký</button>`)+
+  `<div class="filters"><label class="field" for="au1"><b>Người thực hiện:</b><select class="select" id="au1"><option>Tất cả</option></select></label><label class="field" for="au2"><b>Khảo sát:</b><select class="select" id="au2"><option>Tất cả</option></select></label><label class="field" for="au3"><b>Thao tác:</b><select class="select" id="au3"><option>Tất cả</option><option>Xuất bản</option><option>Phân quyền</option><option>Xác minh phản hồi</option></select></label></div>
+  <div class="tablewrap"><table><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Thao tác</th><th>Đối tượng</th></tr></thead><tbody>${a.map(x=>`<tr><td class="num">${x[0]}</td><td>${x[1]}</td><td><b>${x[2]}</b></td><td class="muted">${x[3]}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function vConfig(){
+  return head(`<button class="btn" data-toast="Đã lưu cài đặt chung">Lưu cài đặt</button>`)+
+  `<div class="grid">
+  <section class="panel pad" style="display:grid;gap:12px"><h2>Mặc định cho khảo sát mới</h2><div class="fgrid"><label class="flabel" for="c1">Mẫu màu<select class="select" id="c1"><option>KDI mặc định</option></select></label><label class="flabel" for="c2">Font chữ<select class="select" id="c2"><option>Be Vietnam Pro</option></select></label><label class="flabel" for="c3">Thời hạn lưu dữ liệu (ngày)<input class="input" id="c3" value="730"></label><label class="flabel" for="c4">Liên hệ hỗ trợ<input class="input" id="c4" value="Phòng Công nghệ KDI"></label></div>
+   <label class="flabel" for="c5">Câu đồng ý xử lý dữ liệu mặc định<input class="input" id="c5" value="Tôi đồng ý để KDI Education sử dụng dữ liệu cho mục đích tổng hợp, không chia sẻ cho bên thứ ba."></label></section>
+  <section class="panel pad" style="display:grid;gap:12px"><h2>Đăng nhập & kết nối</h2><dl class="kv"><dt>Đăng nhập</dt><dd>Dùng tài khoản hệ thống chung</dd><dt>Cơ sở dữ liệu</dt><dd><span class="chip open">Đã kết nối</span></dd><dt>Đường dẫn công khai</dt><dd>https://khaosat.kdi.edu.vn</dd></dl></section></div>`;
+}
+
+/* ---------- QR minh họa ---------- */
+function drawQR(){const c=$('#qr'); if(!c) return; const x=c.getContext('2d'); const n=29; let s=7;
+  const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+  x.fillStyle='#fff';x.fillRect(0,0,n,n);x.fillStyle='#10233f';
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++) if(r()>.52) x.fillRect(i,j,1,1);
+  const f=(a,b)=>{x.fillStyle='#fff';x.fillRect(a-1,b-1,9,9);x.fillStyle='#10233f';x.fillRect(a,b,7,7);x.fillStyle='#fff';x.fillRect(a+1,b+1,5,5);x.fillStyle='#10233f';x.fillRect(a+2,b+2,3,3)};
+  f(1,1);f(n-8,1);f(1,n-8);}
+
+/* ---------- render ---------- */
+const VIEWFN={home:vHome,list:vList,create:vCreate,survey:vSurvey,templates:vTemplates,users:vUsers,projects:vProjects,units:vUnits,audit:vAudit,config:vConfig};
+function render(){ document.documentElement.classList.toggle('fit', state.view==='survey'&&state.wt==='soan'&&!state.pv); $('#app').innerHTML=(VIEWFN[state.view]||vHome)(); renderMenu(); renderDD(); drawQR(); }
+$('#app').addEventListener('click',e=>{
+  const row=e.target.closest('tr[data-resp]'); if(row&&!e.target.closest('[data-go]')){state.resp=+row.dataset.resp;render();return;}
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.create){state.create=t.dataset.create;state.wiz=1;render();}
+  else if(t.dataset.ft){state.fileType=t.dataset.ft;render();}
+  else if(t.id==='readfile'){t.textContent='Đang đọc file…';t.disabled=true;setTimeout(()=>{state.wiz=2;state.fixed=false;render();},700);}
+  else if(t.id==='back1'){state.wiz=1;render();}
+  else if(t.id==='save'){state.survey=1;state.q='q3';state.etab='q';go('edit');toast('Đã lưu bản nháp với 10 câu hỏi');}
+  else if(t.dataset.q){state.q=t.dataset.q;render();const c=$('#qc'+state.q);if(c)c.scrollIntoView({block:'start',behavior:'smooth'});}
+  else if(t.dataset.tp){state.tp=state.tp===t.dataset.tp?0:t.dataset.tp;render();}
+  else if(t.dataset.settype){const [id,ty]=t.dataset.settype.split('|');QS.find(x=>x.id===id).t=ty;state.q=id;state.tp=0;render();}
+  else if(t.dataset.add){const k=t.dataset.add, id='n'+(++uid);
+    const it=k==='q'?{id,q:'Câu hỏi mới',t:'Trả lời ngắn',req:false}:k==='sec'?{id,sec:'Phần mới'}:{id,b:k,text:'',cap:'',url:''};
+    let i=t.dataset.end?QS.length-1:QS.findIndex(x=>x.id===state.q); if(i<0) i=QS.length-1;
+    QS.splice(i+1,0,it); state.q=id; render(); const c=$('#qc'+id); if(c) c.scrollIntoView({block:'center',behavior:'smooth'}); toast('Đã thêm '+(k==='q'?'câu hỏi':k==='sec'?'phần mới':k.toLowerCase()));}
+  else if(t.dataset.mv){const [id,dir]=t.dataset.mv.split('|'); const i=QS.findIndex(x=>x.id===id), j=i+ +dir; if(j>=0&&j<QS.length){[QS[i],QS[j]]=[QS[j],QS[i]]; state.q=id; render(); const c=$('#qc'+id); if(c) c.scrollIntoView({block:'nearest'});}}
+  else if(t.dataset.dup){const i=QS.findIndex(x=>x.id===t.dataset.dup); const c=JSON.parse(JSON.stringify(QS[i])); c.id='n'+(++uid); QS.splice(i+1,0,c); state.q=c.id; render(); toast('Đã nhân bản');}
+  else if(t.dataset.del){const i=QS.findIndex(x=>x.id===t.dataset.del); const [g]=QS.splice(i,1); state.q=(QS[i]||QS[i-1]||{}).id; render(); toast('Đã xóa'+(g.q!=null?' câu hỏi':g.sec!=null?' phần':'')+' (mockup, chưa có hoàn tác)');}
+  else if(t.dataset.pvs){state.pvs=t.dataset.pvs;render();}
+  else if(t.dataset.rt){state.rtab=t.dataset.rt;render();}
+  else if(t.dataset.pv){state.pv=!state.pv;render();}
+  else if(t.dataset.range){state.range=t.dataset.range;render();}
+  else if(t.dataset.dev){state.dev=t.dataset.dev;render();}
+  else if(t.dataset.mode){state.mode=t.dataset.mode;render();}
+  else if(t.dataset.toast) toast(t.dataset.toast);
+  else if(t.id==='cp'){const val=$('#lnk').value; Promise.resolve().then(()=>navigator.clipboard.writeText(val)).then(()=>toast('Đã sao chép link'),()=>{$('#lnk').select();toast('Đã chọn link, bấm Ctrl+C để sao chép')});}
+});
+document.addEventListener('click',e=>{if(state.tp&&!e.target.closest('.tpick')){state.tp=0;render();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.tp){state.tp=0;render();}});
+$('#app').addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='pick'){state.survey=+el.value;render();}
+  else if(el.dataset.more&&el.selectedIndex>0){toast('Mockup: '+el.value);el.selectedIndex=0;}
+  else if(el.dataset.fix&&el.value!=='— Chọn loại —'){IMPORTED.find(x=>x.warn).t=el.value; state.fixed=true; render(); toast('Đã sửa câu 3');}
+});
+/* chọn mục đang soạn khi bấm vào thẻ (không vẽ lại để không mất con trỏ) */
+$('#app').addEventListener('focusin',e=>{const c=e.target.closest('[data-card]'); if(!c||c.dataset.card===state.q) return; state.q=c.dataset.card;
+  document.querySelectorAll('[data-card].focus').forEach(x=>x.classList.remove('focus')); c.classList.add('focus');
+  document.querySelectorAll('.qi.on').forEach(x=>x.classList.remove('on')); const o=document.querySelector('.qi[data-q="'+state.q+'"]'); if(o) o.classList.add('on');});
+/* kéo thả đổi thứ tự (cả mục lục bên trái và thẻ bên phải) */
+let dragId=null;
+const clearDrop=()=>document.querySelectorAll('.dropat').forEach(x=>x.classList.remove('dropat'));
+$('#app').addEventListener('dragstart',e=>{const d=e.target.closest&&e.target.closest('[data-drag]'); if(!d) return; dragId=d.dataset.drag; e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',dragId)}catch(_){}});
+$('#app').addEventListener('dragover',e=>{if(!dragId) return; const o=e.target.closest('[data-dropid]'); if(!o) return; e.preventDefault(); if(!o.classList.contains('dropat')){clearDrop(); o.classList.add('dropat');}});
+$('#app').addEventListener('drop',e=>{const o=e.target.closest('[data-dropid]'); if(!dragId||!o) return; e.preventDefault(); const tid=o.dataset.dropid; clearDrop();
+  if(tid!==dragId){const from=QS.findIndex(x=>x.id===dragId), down=from<QS.findIndex(x=>x.id===tid); const [it]=QS.splice(from,1); const to=QS.findIndex(x=>x.id===tid); QS.splice(down?to+1:to,0,it); state.q=dragId; render(); toast('Đã đổi thứ tự, số câu tự đánh lại');}
+  dragId=null;});
+$('#app').addEventListener('dragend',()=>{dragId=null; clearDrop();});
+const h0=location.hash.slice(1); if(TITLE[h0]) state.view=h0;
+render();
+</script>
