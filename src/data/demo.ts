@@ -138,7 +138,8 @@ export const demoAdmin: AdminApi = {
     const db = load();
     const s = db.surveys.find((x) => x.id === sid);
     if (!s || !roleOf(db, sid)) throw new Error('Không tìm thấy khảo sát');
-    return { ...s, myRole: roleOf(db, sid) };
+    const rs = db.responses.filter((r) => r.surveyId === sid);
+    return { ...s, myRole: roleOf(db, sid), stats: { started: rs.length, submitted: rs.filter((r) => r.status === 'submitted').length, inProgress: rs.filter((r) => r.status === 'in_progress').length } };
   },
   async createSurvey(input) {
     const db = load();

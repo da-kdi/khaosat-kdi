@@ -2,7 +2,7 @@
 import type { Answers, GridValue, Question, SurveySchema } from './types.ts';
 import { OTHER_CODE, otherKey } from './types.ts';
 import { getType, isInputQuestion } from './registry.ts';
-import { allQuestions } from './logic.ts';
+import { allQuestions, isEmptyValue } from './logic.ts';
 
 /** One row of response_answers */
 export interface AnswerRow {
@@ -103,6 +103,30 @@ function normalizeOne(q: Question, v: unknown, answers: Answers): AnswerRow {
       row.options.push({ ...opt('qty'), row_code: r, quantity: Number(n) });
     }
     row.answer_number = total;
+  } else if (q.type === 'number_range') {
+    const r = v as Record<string, unknown>;
+    const lo = r.min === '' || r.min == null ? null : Number(r.min);
+    const hi = r.max === '' || r.max == null ? null : Number(r.max);
+    row.answer_number = lo !== null && hi !== null ? (lo + hi) / 2 : lo ?? hi;
+    row.answer_text = `${lo ?? ''}–${hi ?? ''}`;
+    if (lo !== null) row.options.push({ ...opt('min'), quantity: lo });
+    if (hi !== null) row.options.push({ ...opt('max'), quantity: hi });
+  } else if (q.type === 'number_grid') {
+    let total = 0;
+    for (const [r, cells] of Object.entries(v as Record<string, Record<string, unknown>>)) {
+      for (const [c, n] of Object.entries(cells ?? {})) {
+        if (n === '' || n === null || n === undefined || !Number.isFinite(Number(n))) continue;
+        total += Number(n);
+        row.options.push({ ...opt(c), row_code: r, quantity: Number(n) });
+      }
+    }
+    row.answer_number = total;
+  } else if (q.type === 'composite') {
+    const c = v as Record<string, unknown>;
+    row.answer_text = (q.settings?.fields ?? []).filter((f) => !isEmptyValue(c[f.code])).map((f) => `${f.label}: ${c[f.code]}${f.unit ? ` ${f.unit}` : ''}`).join('; ');
+    for (const f of q.settings?.fields ?? []) {
+      if (f.kind === 'number' && !isEmptyValue(c[f.code])) row.options.push({ ...opt(f.code), quantity: Number(c[f.code]) });
+    }
   } else if (q.type === 'category_level') {
     let total = 0;
     for (const [r, cells] of Object.entries(v as GridValue)) {
@@ -159,6 +183,20 @@ export function formatAnswer(q: Question, v: unknown, answers?: Answers): string
         .join(' | ');
     case 'currency':
       return `${Number(v).toLocaleString('vi-VN')} ${q.settings?.currency ?? 'VND'}`;
+    case 'number':
+      return q.settings?.unit ? `${v} ${q.settings.unit}` : String(v);
+    case 'number_range': {
+      const r = v as Record<string, unknown>;
+      return `${r.min ?? '?'} – ${r.max ?? '?'}${q.settings?.unit ? ` ${q.settings.unit}` : ''}`;
+    }
+    case 'number_grid':
+      return Object.entries(v as Record<string, Record<string, unknown>>)
+        .map(([r, cells]) => `${rowLabel(r)}: ${Object.entries(cells ?? {}).filter(([, n]) => n !== '' && n != null).map(([c, n]) => `${label(c)} ${n}`).join(', ')}`)
+        .filter((s) => !s.endsWith(': ')).join(' | ');
+    case 'composite': {
+      const c = v as Record<string, unknown>;
+      return (q.settings?.fields ?? []).filter((f) => !isEmptyValue(c[f.code])).map((f) => `${f.label}: ${c[f.code]}${f.unit ? ` ${f.unit}` : ''}`).join('; ');
+    }
     case 'percentage':
       return `${v}%`;
     case 'address': case 'contact':

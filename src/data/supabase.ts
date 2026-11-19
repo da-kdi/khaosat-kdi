@@ -78,7 +78,10 @@ export function createSupabaseApis(url: string, anonKey: string): { admin: Admin
     },
     async getSurvey(id) {
       const r = must(await sb.from('surveys').select('*').eq('id', id).single());
-      return { ...mapSurvey(r), myRole: await myRole(id) };
+      // số phản hồi cho dòng tiêu đề (chỉ cột trạng thái, theo RLS)
+      const resp = must(await sb.from('survey_responses').select('status').eq('survey_id', id)) as { status: string }[];
+      const submitted = resp.filter((x) => x.status === 'submitted').length;
+      return { ...mapSurvey(r), myRole: await myRole(id), stats: { started: resp.length, submitted, inProgress: resp.length - submitted } };
     },
     async createSurvey(input) {
       const u = cachedUser ?? (await me());

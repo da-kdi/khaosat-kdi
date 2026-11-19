@@ -176,7 +176,7 @@ export function QuestionInspector({ q, schema, onChange, lockedCodes, publishedQ
   );
 }
 
-function TypeSettings({ q, s, setS, onChange }: { q: Question; s: QuestionSettings; setS: (p: Partial<QuestionSettings>) => void; onChange: (p: Partial<Question>) => void }) {
+export function TypeSettings({ q, s, setS, onChange }: { q: Question; s: QuestionSettings; setS: (p: Partial<QuestionSettings>) => void; onChange: (p: Partial<Question>) => void }) {
   switch (q.type) {
     case 'rating':
       return <Field label="Số sao tối đa"><Select value={s.scaleMax ?? 5} onChange={(e) => setS({ scaleMax: Number(e.target.value) })}>{[3, 4, 5, 7, 10].map((n) => <option key={n}>{n}</option>)}</Select></Field>;
@@ -230,7 +230,7 @@ function TypeSettings({ q, s, setS, onChange }: { q: Question; s: QuestionSettin
   }
 }
 
-function MediaFields({ media, onChange }: { media: MediaRef; onChange: (m: MediaRef) => void }) {
+export function MediaFields({ media, onChange }: { media: MediaRef; onChange: (m: MediaRef) => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [state, setState] = useState<'idle' | 'ok' | 'fail'>('idle');

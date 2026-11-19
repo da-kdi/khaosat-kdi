@@ -13,6 +13,7 @@ export type QuestionType =
   | 'rating' | 'likert' | 'nps' | 'ranking' | 'matrix'
   // C — structured
   | 'quantity_by_group' | 'category_level' | 'address' | 'contact' | 'file_upload' | 'consent'
+  | 'number_range' | 'number_grid' | 'composite'
   // D — content (not questions)
   | 'heading' | 'paragraph' | 'instruction' | 'image' | 'video' | 'link' | 'divider';
 
@@ -83,6 +84,14 @@ export interface QuestionSettings {
   quantityLabel?: string;
   /** currency code */
   currency?: string;
+  /** đơn vị hiển thị sau ô số: lớp, học sinh, triệu đồng… (number, number_range, number_grid, quantity_by_group) */
+  unit?: string;
+  /** number_grid: mọi ô phải điền khi câu bắt buộc */
+  requireAllCells?: boolean;
+  /** number_grid: hiện dòng / cột tổng */
+  showTotals?: boolean;
+  /** composite: các ô nhỏ trong một câu */
+  fields?: CompositeField[];
   /** file upload */
   accept?: string;
   maxSizeMb?: number;
@@ -96,6 +105,19 @@ export interface QuestionSettings {
   /** content */
   level?: 1 | 2 | 3;
   tone?: 'info' | 'warning' | 'success';
+}
+
+export interface CompositeField {
+  /** mã ổn định, dùng khi xuất dữ liệu: CODE__field */
+  code: string;
+  label: string;
+  kind: 'text' | 'number' | 'date' | 'select';
+  unit?: string;
+  /** select: các lựa chọn */
+  choices?: string[];
+  required?: boolean;
+  min?: number;
+  max?: number;
 }
 
 export interface Question {
@@ -128,9 +150,24 @@ export interface Section {
   logic?: { visibleIf?: LogicGroup };
 }
 
+/** Một vế của phép kiểm tra chéo: một phần của câu trả lời (× hệ số) hoặc một hằng số. */
+export type CheckOperand = { questionId: string; part?: string; factor?: number } | { value: number };
+
+/** Kiểm tra chéo giữa các câu, ví dụ: số lớp có STEM ≤ tổng số lớp. */
+export interface CrossCheck {
+  id: string;
+  left: CheckOperand;
+  op: 'lte' | 'lt' | 'gte' | 'gt' | 'eq';
+  right: CheckOperand;
+  /** warn: nhắc nhưng vẫn cho gửi; block: phải sửa mới gửi được */
+  severity: 'warn' | 'block';
+  message?: string;
+}
+
 export interface SurveySchema {
   schemaVersion: 1;
   sections: Section[];
+  checks?: CrossCheck[];
 }
 
 export type Answers = Record<string, unknown>;
@@ -140,6 +177,8 @@ export interface ContactValue { name?: string; email?: string; phone?: string; p
 export interface FileValue { name: string; size: number; type: string; path?: string }
 /** category_level / matrix-with-quantity: rowCode -> optionCode -> qty (1 when no quantity) */
 export type GridValue = Record<string, Record<string, number>>;
+/** number_range */
+export interface RangeValue { min?: number; max?: number }
 
 /** Survey-level settings (stored in surveys.settings, snapshotted per version) */
 export interface SurveySettings {

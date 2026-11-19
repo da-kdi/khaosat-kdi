@@ -6,7 +6,7 @@ import type { SurveyStatus } from '@core/index.ts';
 import { api } from '@/data';
 import { useAsync } from '@/lib/useAsync';
 import { ACTION_LABEL, STATUS_LABEL, STATUS_TONE, fmtNum, fmtPct, timeAgo } from '@/lib/format';
-import { Badge, Button, Card, PageLoader, Select, Stat, ErrorBox } from '@/components/ui';
+import { Badge, Button, Card, Input, PageLoader, Select, Stat, ErrorBox } from '@/components/ui';
 import { PageHeader } from './PageHeader';
 
 export default function DashboardPage() {
@@ -16,13 +16,13 @@ export default function DashboardPage() {
   const [project, setProject] = useState('');
   const [status, setStatus] = useState('');
   const [owner, setOwner] = useState('');
-  const [period, setPeriod] = useState('all');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
 
   const list = useMemo(() => {
-    const since = period === 'all' ? 0 : Date.now() - Number(period) * 864e5;
     return (surveys.data ?? []).filter((s) =>
-      (!project || s.projectId === project) && (!status || s.status === status) && (!owner || s.ownerId === owner) && new Date(s.createdAt).getTime() >= since);
-  }, [surveys.data, project, status, owner, period]);
+      (!project || s.projectId === project) && (!status || s.status === status) && (!owner || s.ownerId === owner) && (!from || s.createdAt.slice(0, 10) >= from) && (!to || s.createdAt.slice(0, 10) <= to));
+  }, [surveys.data, project, status, owner, from, to]);
 
   const k = useMemo(() => {
     const by = (st: SurveyStatus[]) => list.filter((s) => st.includes(s.status)).length;
@@ -45,13 +45,16 @@ export default function DashboardPage() {
   if (surveys.loading && !surveys.data) return <PageLoader />;
   return (
     <div>
-      <PageHeader title="Tổng quan" subtitle="Toàn bộ khảo sát bạn có quyền truy cập" actions={<Link to="/admin/surveys?new=1"><Button><Plus className="h-4 w-4" />Tạo khảo sát</Button></Link>} />
+      <PageHeader title="1. Tổng quan" subtitle="Toàn bộ khảo sát bạn có quyền truy cập" actions={<Link to="/admin/surveys?new=1"><Button><Plus className="h-4 w-4" />Tạo khảo sát</Button></Link>} />
       <div className="space-y-6 p-5 sm:p-8">
         {surveys.error && <ErrorBox>{surveys.error}</ErrorBox>}
         <div className="flex flex-wrap gap-2">
-          <Select className="w-auto" value={period} onChange={(e) => setPeriod(e.target.value)} aria-label="Thời gian">
-            <option value="all">Mọi thời điểm (ngày tạo)</option><option value="7">7 ngày qua</option><option value="30">30 ngày qua</option><option value="90">90 ngày qua</option>
-          </Select>
+          <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Ngày tạo">
+            <span className="font-medium">Ngày tạo:</span>
+            <Input type="date" className="h-10 w-auto" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Từ ngày" title="Từ ngày" />
+            <span className="text-muted">đến</span>
+            <Input type="date" className="h-10 w-auto" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Đến ngày" title="Đến ngày" />
+          </div>
           <Select className="w-auto" value={project} onChange={(e) => setProject(e.target.value)} aria-label="Dự án">
             <option value="">Tất cả dự án</option>{projects.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Select>

@@ -216,14 +216,24 @@ function SimpleBars({ data, onClick, isActive }: { data: { name: string; value: 
 
 function Grid({ st, q, active, onToggle }: { st: QuestionStats; q: Question; active: (v: string) => boolean; onToggle: (v: string, l: string) => void }) {
   const g = st.grid!;
-  const qty = q.type === 'quantity_by_group' || (q.type === 'category_level' && q.settings?.withQuantity);
-  const [metric, setMetric] = useState<'qty' | 'resp'>(qty ? 'qty' : 'resp');
-  const val = (r: string, c: string) => (metric === 'qty' ? g.cells[r]?.[c] : g.respondents[r]?.[c]) ?? 0;
+  const qty = q.type === 'quantity_by_group' || q.type === 'number_grid' || (q.type === 'category_level' && q.settings?.withQuantity);
+  const [metric, setMetric] = useState<'qty' | 'resp' | 'avg'>(q.type === 'number_range' ? 'avg' : qty ? 'qty' : 'resp');
+  const val = (r: string, c: string) => {
+    if (metric === 'avg') { const n = g.respondents[r]?.[c] ?? 0; return n ? Math.round(((g.cells[r]?.[c] ?? 0) / n) * 10) / 10 : 0; }
+    return (metric === 'qty' ? g.cells[r]?.[c] : g.respondents[r]?.[c]) ?? 0;
+  };
   const max = Math.max(1, ...g.rows.flatMap((r) => g.cols.map((c) => val(r.code, c.code))));
   const rowTotal = (r: string) => g.cols.reduce((a, c) => a + val(r, c.code), 0);
   const colTotal = (c: string) => g.rows.reduce((a, r) => a + val(r.code, c), 0);
   return (
     <div>
+      {q.type === 'number_grid' && (
+        <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-0.5 text-xs">
+          <button onClick={() => setMetric('qty')} className={cn('rounded-md px-2.5 py-1', metric === 'qty' && 'bg-white font-semibold shadow-sm')}>Tổng{q.settings?.unit ? ` (${q.settings.unit})` : ''}</button>
+          <button onClick={() => setMetric('avg')} className={cn('rounded-md px-2.5 py-1', metric === 'avg' && 'bg-white font-semibold shadow-sm')}>Trung bình mỗi phiếu</button>
+        </div>
+      )}
+      {q.type === 'number_range' && <p className="mb-2 text-xs text-muted">Trung bình các phiếu đã trả lời{q.settings?.unit ? ` (${q.settings.unit})` : ''}.</p>}
       {qty && q.type === 'category_level' && (
         <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-0.5 text-xs">
           <button onClick={() => setMetric('qty')} className={cn('rounded-md px-2.5 py-1', metric === 'qty' && 'bg-white font-semibold shadow-sm')}>Tổng {q.settings?.quantityLabel?.toLowerCase() || 'số lượng'}</button>

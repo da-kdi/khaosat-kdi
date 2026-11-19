@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import('./pages/admin/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const SurveysPage = lazy(() => import('./pages/admin/SurveysPage'));
 const SurveyLayout = lazy(() => import('./pages/admin/survey/SurveyLayout'));
+const DefaultSurveyTab = lazy(() => import('./pages/admin/survey/SurveyLayout').then((m) => ({ default: m.DefaultSurveyTab })));
 const BuilderPage = lazy(() => import('./pages/admin/survey/BuilderPage'));
 const PreviewPage = lazy(() => import('./pages/admin/survey/PreviewPage'));
 const DistributionPage = lazy(() => import('./pages/admin/survey/DistributionPage'));
@@ -18,6 +19,8 @@ const AnalyticsPage = lazy(() => import('./pages/admin/survey/AnalyticsPage'));
 const SurveySettingsPage = lazy(() => import('./pages/admin/survey/SettingsPage'));
 const TemplatesPage = lazy(() => import('./pages/admin/TemplatesPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const ProjectsPage = lazy(() => import('./pages/admin/ProjectsPage'));
+const AuditPage = lazy(() => import('./pages/admin/AuditPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 
 export function App() {
@@ -35,7 +38,7 @@ export function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="surveys" element={<SurveysPage />} />
           <Route path="surveys/:id" element={<SurveyLayout />}>
-            <Route index element={<Navigate to="builder" replace />} />
+            <Route index element={<DefaultSurveyTab />} />
             <Route path="builder" element={<BuilderPage />} />
             <Route path="preview" element={<PreviewPage />} />
             <Route path="distribution" element={<DistributionPage />} />
@@ -45,6 +48,8 @@ export function App() {
           </Route>
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="audit" element={<AuditPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

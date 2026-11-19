@@ -144,8 +144,45 @@ export function QuestionInput(p: FieldProps) {
           <input className={cn(inputCls, 'h-11 pr-14', border)} type="number" inputMode="decimal" placeholder={q.placeholder} min={q.validation?.min} max={q.validation?.max}
             value={value === undefined || value === null ? '' : String(value)} onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))} disabled={disabled} />
           {(q.type === 'currency' || q.type === 'percentage') && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">{q.type === 'percentage' ? '%' : s.currency ?? 'VND'}</span>}
+          {q.type === 'number' && s.unit && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">{s.unit}</span>}
         </div>
       );
+    case 'number_range': {
+      const r = (value ?? {}) as Record<string, number | undefined>;
+      const set = (k: 'min' | 'max', x: string) => { const next = { ...r }; if (x === '') delete next[k]; else next[k] = Number(x); onChange(Object.keys(next).length ? next : undefined); };
+      const box = (k: 'min' | 'max', label: string) => (
+        <input className={cn(inputCls, 'h-11 w-28 text-right tabular-nums', border)} type="number" inputMode="decimal" placeholder={label} aria-label={label}
+          min={q.validation?.min} max={q.validation?.max} value={r[k] ?? ''} onChange={(e) => set(k, e.target.value)} disabled={disabled} />
+      );
+      return <div className="flex flex-wrap items-center gap-2">{box('min', 'Từ')}<span className="text-muted">–</span>{box('max', 'Đến')}{s.unit && <span className="text-sm text-muted">{s.unit}</span>}</div>;
+    }
+    case 'number_grid':
+      return <NumberGridInput {...p} />;
+    case 'composite': {
+      const c = (value ?? {}) as Record<string, string | number>;
+      const set = (k: string, x: string | number | undefined) => { const next = { ...c }; if (x === undefined || x === '') delete next[k]; else next[k] = x; onChange(Object.keys(next).length ? next : undefined); };
+      return (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(s.fields ?? []).map((f) => (
+            <label key={f.code} className="grid gap-1 text-sm">
+              <span className="font-medium">{f.label}{f.required === false ? <span className="font-normal text-muted"> (không bắt buộc)</span> : null}</span>
+              {f.kind === 'select' ? (
+                <select className={cn(inputCls, 'h-11', border)} value={String(c[f.code] ?? '')} onChange={(e) => set(f.code, e.target.value)} disabled={disabled}>
+                  <option value="">— Chọn —</option>{(f.choices ?? []).map((x) => <option key={x}>{x}</option>)}
+                </select>
+              ) : (
+                <span className="relative">
+                  <input className={cn(inputCls, 'h-11', f.unit && 'pr-16', border)} type={f.kind === 'number' ? 'number' : f.kind === 'date' ? 'date' : 'text'} inputMode={f.kind === 'number' ? 'decimal' : undefined}
+                    min={f.min} max={f.max} value={c[f.code] ?? ''} disabled={disabled}
+                    onChange={(e) => set(f.code, f.kind === 'number' ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)} />
+                  {f.unit && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">{f.unit}</span>}
+                </span>
+              )}
+            </label>
+          ))}
+        </div>
+      );
+    }
     case 'date': case 'time': case 'datetime':
       return <input className={cn(inputCls, 'h-11 max-w-xs', border)} type={q.type === 'datetime' ? 'datetime-local' : q.type} value={String(value ?? '')} onChange={(e) => onChange(e.target.value || undefined)} disabled={disabled} />;
 
@@ -464,6 +501,47 @@ function FileInput({ q, value, onChange, onUpload, disabled }: FieldProps) {
         </label>
       )}
       {err && <p className="mt-1 text-sm text-red-600">{err}</p>}
+    </div>
+  );
+}
+
+function NumberGridInput({ q, value, onChange, disabled }: FieldProps) {
+  const rows = active(q.rows);
+  const cols = active(q.options);
+  const g = (value ?? {}) as Record<string, Record<string, number>>;
+  const s = q.settings ?? {};
+  const set = (r: string, c: string, x: string) => {
+    const row = { ...(g[r] ?? {}) };
+    if (x === '') delete row[c]; else row[c] = Number(x);
+    const next = { ...g, [r]: row };
+    if (!Object.keys(row).length) delete next[r];
+    onChange(Object.keys(next).length ? next : undefined);
+  };
+  const colSum = (c: string) => rows.reduce((a, r) => a + (Number(g[r.code]?.[c]) || 0), 0);
+  const rowSum = (r: string) => cols.reduce((a, c) => a + (Number(g[r]?.[c.code]) || 0), 0);
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[360px] border-separate border-spacing-0 text-sm">
+        <thead><tr><th className="sticky left-0 bg-white" />{cols.map((c) => <th key={c.id} className="px-2 pb-2 text-center font-medium text-muted">{c.label}</th>)}{s.showTotals && cols.length > 1 && <th className="px-2 pb-2 text-center font-semibold">Cộng</th>}</tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <th className="sticky left-0 bg-white py-1 pr-3 text-left font-medium">{r.label}</th>
+              {cols.map((c) => (
+                <td key={c.id} className="px-1 py-1">
+                  <input type="number" inputMode="decimal" className={cn(inputCls, 'h-10 min-w-[72px] border-line text-right tabular-nums')} aria-label={`${r.label} – ${c.label}`}
+                    min={q.validation?.min} max={q.validation?.max} value={g[r.code]?.[c.code] ?? ''} onChange={(e) => set(r.code, c.code, e.target.value)} disabled={disabled} />
+                </td>
+              ))}
+              {s.showTotals && cols.length > 1 && <td className="px-2 text-right font-semibold tabular-nums">{rowSum(r.code)}</td>}
+            </tr>
+          ))}
+          {s.showTotals && rows.length > 1 && (
+            <tr className="border-t"><th className="sticky left-0 bg-white pt-2 pr-3 text-left font-semibold">Cộng</th>{cols.map((c) => <td key={c.id} className="px-2 pt-2 text-right font-semibold tabular-nums">{colSum(c.code)}</td>)}{cols.length > 1 && <td className="px-2 pt-2 text-right font-bold tabular-nums">{cols.reduce((a, c) => a + colSum(c.code), 0)}</td>}</tr>
+          )}
+        </tbody>
+      </table>
+      {s.unit && <p className="mt-1 text-xs text-muted">Đơn vị: {s.unit}</p>}
     </div>
   );
 }

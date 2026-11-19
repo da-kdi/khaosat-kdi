@@ -28,7 +28,17 @@ export function exportWide(schema: SurveySchema, responses: PreparedResponse[], 
     for (const q of qs) {
       const vq = analyticQuestions(vSchema).find((x) => x.code === q.code) ?? q;
       const v = r.byCode[q.code];
-      if (q.type === 'category_level' || q.type === 'quantity_by_group') {
+      if (q.type === 'number_range') {
+        const x = (v ?? {}) as Record<string, unknown>;
+        for (const k of ['min', 'max']) row[`${q.code}__${k}`] = x[k] === undefined || x[k] === '' || x[k] === null ? null : Number(x[k]);
+        continue;
+      }
+      if (q.type === 'composite') {
+        const x = (v ?? {}) as Record<string, unknown>;
+        for (const f of q.settings?.fields ?? []) { const c = x[f.code]; row[`${q.code}__${f.code}`] = c === undefined || c === '' || c === null ? null : f.kind === 'number' ? Number(c) : String(c); }
+        continue;
+      }
+      if (q.type === 'category_level' || q.type === 'quantity_by_group' || q.type === 'number_grid') {
         for (const row_ of q.rows ?? []) {
           const cols: { code: string }[] = q.type === 'quantity_by_group' ? [{ code: '' }] : q.options ?? [];
           for (const c of cols) {

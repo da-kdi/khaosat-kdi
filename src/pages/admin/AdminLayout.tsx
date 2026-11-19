@@ -1,74 +1,85 @@
-import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, LayoutTemplate, Users, LogOut, Menu, X, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, ClipboardList, LayoutTemplate, Settings2, ChevronDown, LogOut, RotateCcw } from 'lucide-react';
 import { api, isDemo } from '@/data';
 import { resetDemo } from '@/data/demo';
 import { isAdminRole, useAuth } from '@/lib/auth';
 import { Badge, cn } from '@/components/ui';
 
+/** Menu ngang của phân hệ Khảo sát. Khi gắn vào hệ thống chung, thanh này nằm dưới tab "Khảo sát". */
 const NAV = [
-  { to: '/admin/dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-  { to: '/admin/surveys', label: 'Khảo sát', icon: ClipboardList },
-  { to: '/admin/templates', label: 'Thư viện mẫu', icon: LayoutTemplate },
-  { to: '/admin/users', label: 'Người dùng', icon: Users, adminOnly: true },
+  { to: '/admin/dashboard', label: '1. Tổng quan', icon: LayoutDashboard },
+  { to: '/admin/surveys', label: '2. Khảo sát', icon: ClipboardList },
+  { to: '/admin/templates', label: '3. Thư viện mẫu', icon: LayoutTemplate },
 ];
+const ADMIN_SUB = [
+  { to: '/admin/users', label: '4.1. Người dùng & vai trò', hint: 'Ai được vào, quyền gì' },
+  { to: '/admin/projects', label: '4.2. Dự án / phòng ban', hint: 'Nhóm khảo sát theo dự án' },
+  { to: '/admin/audit', label: '4.3. Nhật ký thao tác', hint: 'Ai đã làm gì, lúc nào' },
+];
+
+const item = (active: boolean) => cn(
+  'flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-[3px] px-3 py-2.5 text-sm font-medium transition',
+  active ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-muted hover:text-ink',
+);
 
 export default function AdminLayout() {
   const { user, setUser } = useAuth();
   const nav = useNavigate();
+  const loc = useLocation();
   const [open, setOpen] = useState(false);
+  const ddRef = useRef<HTMLDivElement>(null);
   const logout = async () => { await api.signOut(); setUser(null); nav('/admin/login'); };
+  const adminActive = ADMIN_SUB.some((s) => loc.pathname.startsWith(s.to));
 
-  const sidebar = (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-4 py-4">
-        <img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI Education" className="h-8" />
-      </div>
-      <p className="px-4 pb-3 text-xs font-semibold uppercase tracking-wider text-brand-700">Hệ thống khảo sát STEM</p>
-      <nav className="flex-1 space-y-0.5 px-2">
-        {NAV.filter((n) => !n.adminOnly || isAdminRole(user)).map((n) => (
-          <NavLink key={n.to} to={n.to} onClick={() => setOpen(false)}
-            className={({ isActive }) => cn('flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition', isActive ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700')}>
-            <n.icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />{n.label}
-          </NavLink>
-        ))}
-      </nav>
-      {isDemo && (
-        <div className="mx-3 mb-3 rounded-lg border border-accent-200 bg-accent-50 p-3 text-xs text-accent-700">
-          <b>Chế độ demo</b> · dữ liệu lưu trong trình duyệt.
-          <button onClick={() => { if (confirm('Xóa toàn bộ dữ liệu demo và tạo lại dữ liệu mẫu?')) { resetDemo(); location.href = import.meta.env.BASE_URL + 'admin/login'; } }} className="mt-1.5 flex items-center gap-1 font-semibold hover:underline"><RotateCcw className="h-3 w-3" />Khôi phục dữ liệu mẫu</button>
-        </div>
-      )}
-      <div className="border-t border-line p-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">{user?.name?.[0]?.toUpperCase()}</div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{user?.name}</p>
-            <p className="truncate text-xs text-muted">{user?.role === 'member' ? 'Thành viên' : user?.role === 'admin' ? 'Quản trị' : 'Super Admin'}</p>
-          </div>
-          <button onClick={logout} className="rounded-md p-1.5 text-muted hover:bg-slate-100" title="Đăng xuất" aria-label="Đăng xuất"><LogOut className="h-4 w-4" /></button>
-        </div>
-      </div>
-    </div>
-  );
+  useEffect(() => setOpen(false), [loc.pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => { if (!ddRef.current?.contains(e.target as Node)) setOpen(false); };
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', h); document.addEventListener('keydown', k);
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k); };
+  }, [open]);
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 border-r border-line bg-white lg:block">{sidebar}</aside>
-      {open && (
-        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-slate-900/30" />
-          <aside className="absolute left-0 top-0 h-full w-64 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>{sidebar}</aside>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-30 border-b border-line bg-white">
+        <div className="thin-scroll flex items-stretch gap-0.5 overflow-x-auto px-4">
+          <span className="mr-2 flex shrink-0 items-center gap-2 border-r border-line py-2 pr-4 text-sm font-bold text-brand-700">
+            <b className="rounded bg-brand-600 px-1.5 py-0.5 text-xs tracking-wide text-white">KDI</b>Hệ thống khảo sát STEM
+          </span>
+          {NAV.map((n) => (
+            <NavLink key={n.to} to={n.to} className={({ isActive }) => item(isActive)}><n.icon className="h-4 w-4" />{n.label}</NavLink>
+          ))}
+          {isAdminRole(user) && (
+            <div ref={ddRef} className="relative flex">
+              <button type="button" className={item(adminActive)} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+                <Settings2 className="h-4 w-4" />4. Quản trị<ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              </button>
+              {open && (
+                <div role="menu" className="fixed z-40 mt-[42px] min-w-[260px] rounded-md border border-line bg-white py-1 shadow-lg">
+                  {ADMIN_SUB.map((s) => (
+                    <NavLink key={s.to} to={s.to} role="menuitem" className={({ isActive }) => cn('block px-4 py-2.5 text-sm', isActive ? 'bg-brand-600 text-white' : 'hover:bg-brand-50')}>
+                      {s.label}<small className="block text-xs opacity-75">{s.hint}</small>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="ml-auto flex shrink-0 items-center gap-2 pl-4">
+            {isDemo && (
+              <>
+                <Badge tone="orange">Demo</Badge>
+                <button onClick={() => { if (confirm('Xóa toàn bộ dữ liệu demo và tạo lại dữ liệu mẫu?')) { resetDemo(); location.href = import.meta.env.BASE_URL + 'admin/login'; } }} className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-accent-700 hover:bg-accent-50" title="Khôi phục dữ liệu mẫu"><RotateCcw className="h-3.5 w-3.5" /><span className="hidden xl:inline">Khôi phục dữ liệu mẫu</span></button>
+              </>
+            )}
+            <span className="hidden text-sm sm:inline" title={user?.email}>{user?.name}</span>
+            <button onClick={logout} className="rounded-md p-1.5 text-muted hover:bg-slate-100" title="Đăng xuất" aria-label="Đăng xuất"><LogOut className="h-4 w-4" /></button>
+          </div>
         </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-white px-4 py-2.5 lg:hidden">
-          <button onClick={() => setOpen(!open)} className="rounded-md p-1.5 hover:bg-slate-100" aria-label="Menu">{open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
-          <img src={`${import.meta.env.BASE_URL}brand/kdi-logo.png`} alt="KDI" className="h-7" />
-          {isDemo && <Badge tone="orange">Demo</Badge>}
-        </div>
-        <Outlet />
-      </div>
+      </header>
+      <Outlet />
     </div>
   );
 }

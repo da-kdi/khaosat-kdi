@@ -2,6 +2,7 @@ import type { Answers, ChoiceOption, ContactValue, FileValue, GridValue, Questio
 import { OTHER_CODE, otherKey } from './types.ts';
 import { computeVisibility, isEmptyValue, isRequired } from './logic.ts';
 import { isInputQuestion } from './registry.ts';
+import { runChecks } from './checks.ts';
 
 export type Errors = Record<string, string>;
 
@@ -149,6 +150,61 @@ export function validateQuestion(q: Question, value: unknown, required: boolean,
       if (s.maxSelect && selected > s.maxSelect) return `Chọn tối đa ${s.maxSelect} mục`;
       return null;
     }
+    case 'number_range': {
+      if (typeof value !== 'object' || Array.isArray(value)) return 'Giá trị không hợp lệ';
+      const r = value as Record<string, unknown>;
+      const lo = r.min === '' || r.min == null ? undefined : Number(r.min);
+      const hi = r.max === '' || r.max == null ? undefined : Number(r.max);
+      if ((lo !== undefined && !Number.isFinite(lo)) || (hi !== undefined && !Number.isFinite(hi))) return 'Vui lòng nhập số';
+      if (required && (lo === undefined || hi === undefined)) return 'Vui lòng nhập cả hai giá trị';
+      for (const n of [lo, hi]) {
+        if (n === undefined) continue;
+        if (v.min !== undefined && n < v.min) return `Giá trị tối thiểu là ${v.min}`;
+        if (v.max !== undefined && n > v.max) return `Giá trị tối đa là ${v.max}`;
+      }
+      if (lo !== undefined && hi !== undefined && lo > hi) return `Tối thiểu (${lo}) đang lớn hơn tối đa (${hi})`;
+      return null;
+    }
+    case 'number_grid': {
+      if (typeof value !== 'object' || Array.isArray(value)) return 'Giá trị không hợp lệ';
+      const rows = activeCodes(q.rows);
+      const cols = activeCodes(q.options);
+      const g = value as Record<string, Record<string, unknown>>;
+      for (const [r, cells] of Object.entries(g)) {
+        if (!rows.has(r)) return 'Dòng không hợp lệ';
+        for (const [c, x] of Object.entries(cells ?? {})) {
+          if (!cols.has(c)) return 'Cột không hợp lệ';
+          if (x === '' || x === null || x === undefined) continue;
+          const n = Number(x);
+          if (!Number.isFinite(n)) return 'Vui lòng nhập số';
+          if (v.min !== undefined && n < v.min) return `Mỗi ô tối thiểu là ${v.min}`;
+          if (v.max !== undefined && n > v.max) return `Mỗi ô tối đa là ${v.max}`;
+        }
+      }
+      if (required && s.requireAllCells) {
+        let missing = 0;
+        for (const r of rows) for (const c of cols) { const x = g[r]?.[c]; if (x === '' || x === null || x === undefined) missing++; }
+        if (missing) return `Còn ${missing} ô chưa điền`;
+      }
+      return null;
+    }
+    case 'composite': {
+      if (typeof value !== 'object' || Array.isArray(value)) return 'Giá trị không hợp lệ';
+      const c = value as Record<string, unknown>;
+      for (const f of s.fields ?? []) {
+        const x = c[f.code];
+        if (isEmptyValue(x)) { if (required && f.required !== false) return `Vui lòng điền “${f.label}”`; continue; }
+        if (f.kind === 'number') {
+          const n = Number(x);
+          if (!Number.isFinite(n)) return `“${f.label}” phải là số`;
+          if (f.min !== undefined && n < f.min) return `“${f.label}” tối thiểu là ${f.min}`;
+          if (f.max !== undefined && n > f.max) return `“${f.label}” tối đa là ${f.max}`;
+        }
+        if (f.kind === 'date' && Number.isNaN(Date.parse(String(x)))) return `“${f.label}” không phải ngày hợp lệ`;
+        if (f.kind === 'select' && f.choices?.length && !f.choices.includes(String(x))) return `“${f.label}” không hợp lệ`;
+      }
+      return null;
+    }
     case 'address': {
       const a = value as Record<string, string>;
       if (required && (!a.province || (s.includeWard && !a.ward))) return 'Vui lòng nhập đủ địa chỉ';
@@ -194,6 +250,12 @@ export function validateAnswers(schema: SurveySchema, answers: Answers, sectionI
       const err = validateQuestion(q, answers[q.id], isRequired(q, vis.effective), answers);
       if (err) errors[q.id] = err;
     }
+  }
+  // kiểm tra chéo loại "chặn gửi": gắn lỗi vào câu bên trái
+  const inSection = sectionId ? new Set(schema.sections.find((s) => s.id === sectionId)?.questions.map((q) => q.id) ?? []) : null;
+  for (const r of runChecks(schema, answers, 'block')) {
+    if (inSection && !inSection.has(r.questionId)) continue;
+    if (!errors[r.questionId]) errors[r.questionId] = r.message;
   }
   return errors;
 }

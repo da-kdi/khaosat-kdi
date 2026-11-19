@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ClipboardList, Copy, FilePlus2, LayoutGrid, List, Plus, Search, Sparkles } from 'lucide-react';
+import { ClipboardList, Copy, FilePlus2, FileUp, LayoutGrid, List, Plus, Search, Sparkles } from 'lucide-react';
 import { blankSchema, cloneSchemaWithNewIds } from '@core/index.ts';
 import { api, type SurveyRow, type TemplateRow } from '@/data';
 import { useAsync } from '@/lib/useAsync';
 import { STATUS_LABEL, STATUS_TONE, fmtDate, fmtNum, fmtPct, slugify } from '@/lib/format';
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, PageLoader, Select, Tabs, Textarea, cn, useToast } from '@/components/ui';
 import { PageHeader } from './PageHeader';
+import { ImportPanel } from './ImportPanel';
+import { rowWarning, rowsToSchema, type ImportRow } from '@/lib/importQuestions';
 
 export default function SurveysPage() {
   const surveys = useAsync(() => api.listSurveys());
@@ -14,32 +16,41 @@ export default function SurveysPage() {
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
-  const [project, setProject] = useState('');
+  const [project, setProject] = useState(() => params.get('project') ?? '');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [view, setView] = useState<'table' | 'cards'>('table');
   const [creating, setCreating] = useState(params.get('new') === '1');
   const [dup, setDup] = useState<SurveyRow | null>(null);
 
   const list = useMemo(() => (surveys.data ?? []).filter((s) =>
-    (!status ? s.status !== 'archived' : s.status === status) && (!project || s.projectId === project) &&
-    (!q || `${s.title} ${s.slug} ${s.category ?? ''}`.toLowerCase().includes(q.toLowerCase()))), [surveys.data, q, status, project]);
+    (!status || s.status === status || (status === 'closed' && s.status === 'archived')) && (!project || s.projectId === project) &&
+    (!from || s.createdAt.slice(0, 10) >= from) && (!to || s.createdAt.slice(0, 10) <= to) &&
+    (!q || `${s.title} ${s.slug} ${s.category ?? ''}`.toLowerCase().includes(q.toLowerCase()))), [surveys.data, q, status, project, from, to]);
   const pname = (id: string | null) => projects.data?.find((p) => p.id === id)?.name ?? '—';
 
   return (
     <div>
-      <PageHeader title="Khảo sát" subtitle="Survey Workspace · quản lý theo dự án, trạng thái và mục đích"
-        actions={<Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Tạo khảo sát</Button>} />
-      <div className="space-y-4 p-5 sm:p-8">
+      <PageHeader title="2. Khảo sát"
+        actions={<Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Tạo khảo sát mới</Button>} />
+      <div className="space-y-4 px-5 pb-8 pt-3 sm:px-8">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input className="pl-9" placeholder="Tìm theo tên, slug, danh mục…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <Select className="w-auto" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Trạng thái">
-            <option value="">Đang dùng (trừ lưu trữ)</option>{Object.entries(STATUS_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            <option value="">Mọi trạng thái</option>{(['draft', 'published', 'paused', 'closed'] as const).map((v) => <option key={v} value={v}>{STATUS_LABEL[v]}</option>)}
           </Select>
           <Select className="w-auto" value={project} onChange={(e) => setProject(e.target.value)} aria-label="Dự án">
             <option value="">Tất cả dự án</option>{projects.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Select>
+          <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Ngày tạo">
+            <span className="font-medium">Ngày tạo:</span>
+            <Input type="date" className="h-10 w-auto" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Từ ngày" title="Từ ngày" />
+            <span className="text-muted">đến</span>
+            <Input type="date" className="h-10 w-auto" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Đến ngày" title="Đến ngày" />
+          </div>
           <div className="ml-auto"><Tabs value={view} onChange={setView} items={[{ value: 'table', label: <List className="h-4 w-4" /> }, { value: 'cards', label: <LayoutGrid className="h-4 w-4" /> }]} /></div>
         </div>
         {surveys.error && <ErrorBox>{surveys.error}</ErrorBox>}
@@ -47,30 +58,49 @@ export default function SurveysPage() {
           <Card><Empty icon={<ClipboardList className="h-10 w-10" />} title="Chưa có khảo sát nào">Tạo khảo sát mới từ đầu hoặc từ thư viện mẫu.<div className="mt-4"><Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" />Tạo khảo sát</Button></div></Empty></Card>
         ) : view === 'table' ? (
           <Card className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted">
-                <tr><th className="px-5 py-2.5 font-medium">Khảo sát</th><th className="px-3 py-2.5 font-medium">Dự án</th><th className="px-3 py-2.5 font-medium">Trạng thái</th><th className="px-3 py-2.5 text-right font-medium">Đã gửi / bắt đầu</th><th className="px-3 py-2.5 text-right font-medium">Hoàn thành</th><th className="px-3 py-2.5 font-medium">Cập nhật</th><th className="px-5 py-2.5" /></tr>
+            <table className="w-full min-w-[980px] text-sm">
+              <thead className="bg-brand-600 text-left text-white">
+                <tr>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold">STT</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Tên khảo sát</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Dự án</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold">Ngày bắt đầu</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold">Ngày kết thúc</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Trạng thái</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-right font-semibold">Đã gửi / bắt đầu</th>
+                  <th className="whitespace-nowrap px-3 py-2.5 text-center font-semibold">Thao tác</th>
+                </tr>
               </thead>
               <tbody>
-                {list.map((s) => (
-                  <tr key={s.id} className="border-t border-line hover:bg-surface/60">
-                    <td className="px-5 py-3">
-                      <Link to={`/admin/surveys/${s.id}/builder`} className="font-medium hover:text-brand-700">{s.title}</Link>
-                      <p className="mt-0.5 font-mono text-xs text-muted">/s/{s.slug}{s.hasUnpublishedChanges && s.currentVersionId && <span className="ml-2 font-sans text-accent-700">• có thay đổi chưa xuất bản</span>}</p>
-                    </td>
-                    <td className="px-3 py-3 text-muted">{pname(s.projectId)}</td>
-                    <td className="px-3 py-3"><Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge></td>
-                    <td className="px-3 py-3 text-right tabular-nums"><b>{fmtNum(s.stats?.submitted)}</b> / {fmtNum(s.stats?.started)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums">{s.stats?.started ? fmtPct(s.stats.submitted / s.stats.started, 0) : '—'}</td>
-                    <td className="px-3 py-3 text-muted">{fmtDate(s.updatedAt)}</td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <Link to={`/admin/surveys/${s.id}/analytics`}><Button size="sm" variant="ghost">Phân tích</Button></Link>
-                        <Button size="sm" variant="ghost" onClick={() => setDup(s)} title="Nhân bản"><Copy className="h-4 w-4" /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {list.map((s, i) => {
+                  const draft = s.status === 'draft' && !s.currentVersionId;
+                  return (
+                    <tr key={s.id} className="border-t border-line hover:bg-surface/60">
+                      <td className="px-3 py-3 text-center tabular-nums text-muted">{i + 1}</td>
+                      <td className="px-3 py-3">
+                        <Link to={`/admin/surveys/${s.id}`} className="font-semibold text-brand-600 hover:underline">{s.title}</Link>
+                        <p className="mt-0.5 font-mono text-xs text-muted">/s/{s.slug}{s.hasUnpublishedChanges && s.currentVersionId && <span className="ml-2 font-sans text-accent-700">• có thay đổi chưa xuất bản</span>}</p>
+                      </td>
+                      <td className="px-3 py-3 text-muted">{pname(s.projectId)}</td>
+                      <td className="px-3 py-3 text-center tabular-nums">{s.startAt ? fmtDate(s.startAt) : '–'}</td>
+                      <td className="px-3 py-3 text-center tabular-nums" title={s.endAt ? undefined : 'Không thời hạn'}>{s.endAt ? fmtDate(s.endAt) : '–'}</td>
+                      <td className="whitespace-nowrap px-3 py-3"><Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge></td>
+                      <td className="px-3 py-3 text-right tabular-nums">{draft ? <span className="text-muted">Chưa phát hành</span> : <><b>{fmtNum(s.stats?.submitted)}</b> / {fmtNum(s.stats?.started)}{s.stats?.started ? <span className="ml-1 text-xs text-muted">({fmtPct(s.stats.submitted / s.stats.started, 0)})</span> : null}</>}</td>
+                      <td className="px-3 py-3">
+                        <div className="grid grid-cols-[64px_80px_76px_92px] items-center justify-center gap-1.5">
+                          <Link to={`/admin/surveys/${s.id}/builder`}><Button size="sm" variant={draft ? 'primary' : 'outline'} className="w-full">Soạn</Button></Link>
+                          {draft ? <Button size="sm" variant="outline" className="w-full" disabled title="Chưa phát hành">Theo dõi</Button>
+                            : <Link to={`/admin/surveys/${s.id}/distribution`}><Button size="sm" variant="outline" className="w-full">Theo dõi</Button></Link>}
+                          {draft ? <Button size="sm" variant="outline" className="w-full" disabled title="Chưa có phản hồi">Báo cáo</Button>
+                            : <Link to={`/admin/surveys/${s.id}/analytics`}><Button size="sm" className="w-full">Báo cáo</Button></Link>}
+                          <Select className="h-8 px-2 text-sm" aria-label="Thao tác khác" value="" onChange={(e) => { if (e.target.value === 'dup') setDup(s); }}>
+                            <option value="">Khác…</option><option value="dup">Nhân bản</option>
+                          </Select>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </Card>
@@ -79,7 +109,7 @@ export default function SurveysPage() {
             {list.map((s) => (
               <Card key={s.id} className="flex flex-col p-5 transition hover:border-brand-200 hover:shadow-sm">
                 <div className="flex items-start justify-between gap-2"><Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge><span className="text-xs text-muted">{pname(s.projectId)}</span></div>
-                <Link to={`/admin/surveys/${s.id}/builder`} className="mt-3 font-semibold leading-snug hover:text-brand-700">{s.title}</Link>
+                <Link to={`/admin/surveys/${s.id}`} className="mt-3 font-semibold leading-snug hover:text-brand-700">{s.title}</Link>
                 <p className="mt-1 line-clamp-2 text-sm text-muted">{s.description}</p>
                 <div className="mt-auto flex items-end justify-between pt-4">
                   <div><p className="text-2xl font-semibold tabular-nums">{fmtNum(s.stats?.submitted)}</p><p className="text-xs text-muted">phản hồi đã gửi</p></div>
@@ -110,6 +140,7 @@ function NewSurveyModal({ open, onClose, projects, onProjectCreated, preset }: {
   const [purpose, setPurpose] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [rows, setRows] = useState<ImportRow[] | null>(null);
   useEffect(() => { if (!slugTouched) setSlug(slugify(title)); }, [title, slugTouched]);
   useEffect(() => { if (preset) setTpl(preset.id); }, [preset]);
   const chosen = templates.data?.find((t) => t.id === tpl);
@@ -118,6 +149,11 @@ function NewSurveyModal({ open, onClose, projects, onProjectCreated, preset }: {
   const create = async () => {
     setErr('');
     if (!title.trim()) return setErr('Vui lòng nhập tên khảo sát');
+    if (tpl === 'file') {
+      if (!rows) return setErr('Chọn file hoặc dán nội dung câu hỏi trước');
+      const bad = rows.filter((r) => rowWarning(r)).length;
+      if (bad) return setErr(`Còn ${bad} câu cần chọn lại loại hoặc bỏ đi`);
+    }
     if (!/^[a-z0-9][a-z0-9-]{2,80}$/.test(slug)) return setErr('Slug chỉ gồm chữ thường không dấu, số và dấu gạch ngang (≥ 3 ký tự)');
     setBusy(true);
     try {
@@ -126,7 +162,7 @@ function NewSurveyModal({ open, onClose, projects, onProjectCreated, preset }: {
       const s = await api.createSurvey({
         title: title.trim(), slug, category: category || undefined, purpose: purpose || undefined, projectId: pid === '__new' ? null : pid,
         description: chosen?.description ?? undefined,
-        schema: chosen ? cloneSchemaWithNewIds(chosen.schema) : blankSchema(),
+        schema: tpl === 'file' && rows ? rowsToSchema(rows) : chosen ? cloneSchemaWithNewIds(chosen.schema) : blankSchema(),
         settings: chosen?.settings, theme: chosen?.theme,
       });
       toast('Đã tạo khảo sát');
@@ -135,15 +171,17 @@ function NewSurveyModal({ open, onClose, projects, onProjectCreated, preset }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Tạo khảo sát mới" size="lg" footer={<><Button variant="outline" onClick={onClose}>Hủy</Button><Button onClick={create} loading={busy}>Tạo và mở Builder</Button></>}>
+    <Modal open={open} onClose={onClose} title="Tạo khảo sát mới" size={tpl === 'file' ? 'xl' : 'lg'} footer={<><Button variant="outline" onClick={onClose}>Hủy</Button><Button onClick={create} loading={busy}>{tpl === 'file' ? 'Lưu bản nháp và mở trang soạn' : 'Tạo và mở Builder'}</Button></>}>
       <div className="space-y-5">
         <div>
           <p className="mb-2 text-sm font-medium">Bắt đầu từ</p>
           <div className="grid gap-2 sm:grid-cols-2">
+            <TemplateTile active={tpl === 'file'} onClick={() => setTpl('file')} icon={<FileUp className="h-5 w-5" />} title="Nhập từ file Word / Excel" text="Đã có bộ câu hỏi soạn sẵn" />
             <TemplateTile active={tpl === 'blank'} onClick={() => setTpl('blank')} icon={<FilePlus2 className="h-5 w-5" />} title="Khảo sát trống" text="Tự thiết kế từ đầu" />
-            {templates.data?.map((t) => <TemplateTile key={t.id} active={tpl === t.id} onClick={() => { setTpl(t.id); if (!title || templates.data?.some((x) => x.title === title)) { setTitle(t.title); setCategory(t.category ?? ''); } }} icon={<Sparkles className="h-5 w-5" />} title={t.title} text={t.description ?? ''} />)}
+            {tpl !== 'file' && templates.data?.map((t) => <TemplateTile key={t.id} active={tpl === t.id} onClick={() => { setTpl(t.id); if (!title || templates.data?.some((x) => x.title === title)) { setTitle(t.title); setCategory(t.category ?? ''); } }} icon={<Sparkles className="h-5 w-5" />} title={t.title} text={t.description ?? ''} />)}
           </div>
         </div>
+        {tpl === 'file' && <ImportPanel rows={rows} onRows={setRows} />}
         <Field label="Tên khảo sát"><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="VD: Khảo sát nhu cầu chủ đề STEM 2026–2027" autoFocus /></Field>
         <Field label="Đường dẫn" hint="(slug)">
           <div className="flex items-center rounded-lg border border-line bg-surface pl-3 text-sm text-muted focus-within:border-brand-400">

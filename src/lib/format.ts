@@ -2,16 +2,16 @@ import type { SurveyStatus } from '@core/index.ts';
 
 export const STATUS_LABEL: Record<SurveyStatus, string> = {
   draft: 'Bản nháp',
-  published: 'Đang mở',
+  published: 'Đang thu thập',
   paused: 'Tạm dừng',
-  closed: 'Đã đóng',
-  archived: 'Lưu trữ',
+  closed: 'Đã kết thúc',
+  archived: 'Đã kết thúc (lưu trữ cũ)',
 };
-export const STATUS_TONE: Record<SurveyStatus, 'slate' | 'green' | 'orange' | 'red' | 'purple'> = {
+export const STATUS_TONE: Record<SurveyStatus, 'slate' | 'blue' | 'green' | 'orange' | 'red' | 'purple'> = {
   draft: 'slate',
   published: 'green',
   paused: 'orange',
-  closed: 'red',
+  closed: 'blue',
   archived: 'purple',
 };
 

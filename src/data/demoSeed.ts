@@ -58,6 +58,9 @@ function answerFor(q: Question, r: () => number, i: number): unknown {
     case 'ranking': return [...opts].sort(() => r() - 0.5).map((o) => o.code);
     case 'matrix': return Object.fromEntries(rows.map((row) => [row.code, opts[Math.min(opts.length - 1, Math.floor(Math.sqrt(r()) * opts.length))].code]));
     case 'quantity_by_group': return Object.fromEntries(rows.map((row) => [row.code, 2 + Math.floor(r() * 7)]));
+    case 'number_grid': return Object.fromEntries(rows.map((row) => [row.code, Object.fromEntries(opts.map((c, k) => [c.code, (2 + Math.floor(r() * 6)) * (k ? 30 : 1)]))]));
+    case 'number_range': { const lo = 10 + Math.floor(r() * 40); return { min: lo, max: lo + 10 + Math.floor(r() * 50) }; }
+    case 'composite': return Object.fromEntries((q.settings?.fields ?? []).map((f) => [f.code, f.kind === 'number' ? 1 + Math.floor(r() * 20) : f.kind === 'select' ? f.choices?.[0] : f.kind === 'date' ? '2026-10-01' : pick(r, NAMES)]));
     case 'category_level': {
       const v: Record<string, Record<string, number>> = {};
       for (const row of rows) {

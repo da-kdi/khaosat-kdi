@@ -142,6 +142,7 @@ export function PublicSurveyPage() {
   return (
     <SurveyForm
       survey={survey}
+      rail="lg"
       initialAnswers={resumed?.answers}
       initialSectionId={resumed?.sectionId}
       skipIntro={!!resumed}

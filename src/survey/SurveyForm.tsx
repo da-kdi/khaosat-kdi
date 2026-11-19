@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Clock, Loader2, Send, EyeOff, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Download, Loader2, Send, EyeOff, Pencil } from 'lucide-react';
 import {
-  PublicApiError, computeVisibility, formatAnswer, isInputQuestion, isRequired, validateAnswers, isEmptyValue,
+  PublicApiError, computeVisibility, formatAnswer, isInputQuestion, isRequired, runChecks, validateAnswers, isEmptyValue,
   type Answers, type Question, type SurveySchema, type SurveySettings, type SurveyTheme,
 } from '@core/index.ts';
 import { cn } from '@/components/ui';
 import { ContentBlock, MediaView, QuestionInput } from './fields';
 import { resolveTheme, themeStyle } from './theme';
+import { formHtml, printPdf } from '@/lib/blankForm';
+
+export type FormStage = 'intro' | 'form' | 'review';
 
 export interface FormSurvey {
   title: string;
@@ -30,6 +33,11 @@ interface Props {
   banner?: ReactNode;
   footerNote?: ReactNode;
   embedded?: boolean;
+  /** cột tiến độ bên trái (màn hình rộng): 'always' trong khung xem trước máy tính, 'lg' theo bề rộng màn hình */
+  rail?: 'always' | 'lg';
+  /** xem trước: nhảy tới một bước (t đổi mỗi lần bấm) */
+  requestStage?: { stage: FormStage; t: number };
+  onStageChange?: (s: FormStage) => void;
 }
 
 export function SurveyHeader({ survey, compact }: { survey: FormSurvey; compact?: boolean }) {
@@ -45,17 +53,22 @@ export function SurveyHeader({ survey, compact }: { survey: FormSurvey; compact?
   );
 }
 
-export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro, onStart, onAnswersChange, onSubmit, onUpload, showHidden, banner, footerNote, embedded }: Props) {
+export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro, onStart, onAnswersChange, onSubmit, onUpload, showHidden, banner, footerNote, embedded, rail, requestStage, onStageChange }: Props) {
   const schema = survey.schema;
   const settings = survey.settings ?? {};
   const theme = resolveTheme(survey.theme);
   const [answers, setAnswers] = useState<Answers>(() => ({ ...defaultAnswers(schema), ...(initialAnswers ?? {}) }));
-  const [stage, setStage] = useState<'intro' | 'form' | 'review'>(skipIntro ? 'form' : 'intro');
+  const answersRef = useRef(answers);
+  const [stage, setStage] = useState<FormStage>(skipIntro ? 'form' : 'intro');
+  useEffect(() => { if (requestStage) setStage(requestStage.stage); }, [requestStage]);
+  useEffect(() => { onStageChange?.(stage); }, [stage]); // eslint-disable-line react-hooks/exhaustive-deps
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [starting, setStarting] = useState(false);
   const [formError, setFormError] = useState('');
   const vis = useMemo(() => computeVisibility(schema, answers), [schema, answers]);
+  // kiểm tra chéo loại "nhắc": hiện ngay dưới câu, không chặn gửi
+  const warns = useMemo(() => { const m: Record<string, string> = {}; for (const r of runChecks(schema, answers, 'warn')) m[r.questionId] ??= r.message; return m; }, [schema, answers]);
   const visibleSections = schema.sections.filter((s) => vis.sections.has(s.id));
   const [sectionId, setSectionId] = useState<string | null>(() => (initialSectionId && schema.sections.some((s) => s.id === initialSectionId) ? initialSectionId : schema.sections[0]?.id ?? null));
   const topRef = useRef<HTMLDivElement>(null);
@@ -68,12 +81,12 @@ export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro
   const scrollTop = () => (embedded ? topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   const update = (key: string, v: unknown) => {
-    setAnswers((prev) => {
-      const next = { ...prev };
-      if (v === undefined) delete next[key]; else next[key] = v;
-      onAnswersChange?.(next, current?.id ?? null);
-      return next;
-    });
+    // tính từ bản mới nhất (ref) để hai lần cập nhật liền nhau không ghi đè nhau; gọi callback ngoài setState
+    const next = { ...answersRef.current };
+    if (v === undefined) delete next[key]; else next[key] = v;
+    answersRef.current = next;
+    setAnswers(next);
+    onAnswersChange?.(next, current?.id ?? null);
     if (errors[key]) setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
   };
 
@@ -140,6 +153,33 @@ export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro
   useEffect(() => { if (formError) scrollTop(); }, [formError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const qCount = schema.sections.flatMap((s) => s.questions).filter(isInputQuestion).length;
+  // tiến độ theo câu: chỉ tính câu đang hiện
+  const secStats = visibleSections.map((s) => {
+    const qs = s.questions.filter((q) => isInputQuestion(q) && vis.questions.has(q.id));
+    return { s, total: qs.length, done: qs.filter((q) => !isEmptyValue(answers[q.id])).length };
+  });
+  const shownTotal = secStats.reduce((a, x) => a + x.total, 0);
+  const shownDone = secStats.reduce((a, x) => a + x.done, 0);
+  const allErrs = stage === 'review' ? validateAnswers(schema, answers) : {};
+  const blankPdf = () => { if (!printPdf(formHtml(survey.title, schema))) setFormError('Trình duyệt chặn cửa sổ in. Vui lòng cho phép cửa sổ bật lên rồi thử lại.'); };
+  const railOn = !!rail && stage === 'form';
+  const railNav = (
+    <nav aria-label="Các phần của phiếu" className={cn('sticky top-4 grid content-start gap-1.5 self-start rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5', rail === 'lg' && 'hidden lg:grid')}>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted">Tiến độ</span>
+      <b className="tabular-nums">{shownDone}/{shownTotal} câu</b>
+      <div className="h-1.5 overflow-hidden rounded-full bg-black/5"><div className="survey-progress h-full" style={{ width: `${shownTotal ? (shownDone / shownTotal) * 100 : 0}%` }} /></div>
+      <div className="mt-1 grid gap-1">
+        {secStats.map((x, i) => (
+          <button key={x.s.id} type="button" onClick={() => goto(x.s.id)} aria-current={x.s.id === current?.id ? 'step' : undefined}
+            className={cn('flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] transition hover:bg-black/5', x.s.id === current?.id && 'bg-black/5 font-semibold')}>
+            <span className="min-w-0">{i + 1}. {x.s.title}</span>
+            <span className={cn('shrink-0 tabular-nums', x.total && x.done === x.total ? 'text-emerald-600' : 'text-muted')}>{x.done}/{x.total}</span>
+          </button>
+        ))}
+      </div>
+      <button type="button" onClick={() => { setStage('review'); scrollTop(); }} className="mt-1 rounded-lg px-2 py-1.5 text-[13px] font-medium ring-1 ring-black/10 hover:bg-black/5">Kiểm tra các câu đã làm</button>
+    </nav>
+  );
 
   return (
     <div style={themeStyle(survey.theme)} className={cn(!embedded && 'min-h-screen')} ref={topRef}>
@@ -149,7 +189,7 @@ export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro
           <div className="survey-progress h-full transition-all duration-500" style={{ width: `${Math.max(4, progress * 100)}%` }} role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} />
         </div>
       )}
-      <main className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:pt-10">
+      <main className={cn('mx-auto px-4 pb-16 pt-6 sm:pt-10', railOn ? (rail === 'always' ? 'max-w-5xl' : 'max-w-3xl lg:max-w-5xl') : 'max-w-3xl')}>
         {banner}
         {formError && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{formError}</div>}
 
@@ -168,15 +208,18 @@ export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro
               <button onClick={start} disabled={starting} className="survey-btn mt-8 inline-flex h-12 items-center gap-2 rounded-xl px-7 text-base font-semibold shadow-sm transition disabled:opacity-60">
                 {starting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}Bắt đầu khảo sát <ArrowRight className="h-5 w-5" />
               </button>
+              <div className="mt-3"><button type="button" onClick={blankPdf} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink hover:underline"><Download className="h-4 w-4" />Tải phiếu trống để soạn trước (PDF)</button></div>
               {settings.contactInfo && <p className="mt-6 border-t border-line pt-4 text-sm text-muted whitespace-pre-line">{settings.contactInfo}</p>}
             </div>
           </section>
         )}
 
         {stage === 'form' && current && (
-          <section key={current.id} className="animate-in">
+          <div className={cn(railOn && (rail === 'always' ? 'grid grid-cols-[220px_minmax(0,1fr)] gap-6' : 'lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6'))}>
+          {railOn && railNav}
+          <section key={current.id} className="animate-in min-w-0">
             <div className="mb-5">
-              <p className="text-sm font-medium text-muted">Phần {idx + 1}/{visibleSections.length}</p>
+              <p className="flex items-center justify-between gap-2 text-sm font-medium text-muted"><span>Phần {idx + 1}/{visibleSections.length}</span>{settings.showProgress !== false && <span className={cn('tabular-nums', rail === 'always' && 'hidden', rail === 'lg' && 'lg:hidden')}><b className="text-ink">{shownDone}/{shownTotal}</b> câu</span>}</p>
               <h2 className="mt-1 text-xl font-bold sm:text-2xl survey-primary-text">{current.title}</h2>
               {current.description && <p className="prose-vi mt-2 whitespace-pre-line text-slate-700">{current.description}</p>}
             </div>
@@ -185,7 +228,7 @@ export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro
                 const visible = vis.questions.has(q.id);
                 if (!visible && !showHidden) return null;
                 return (
-                  <QuestionCard key={q.id} q={q} hidden={!visible} required={isRequired(q, vis.effective)} error={errors[q.id]}>
+                  <QuestionCard key={q.id} q={q} hidden={!visible} required={isRequired(q, vis.effective)} error={errors[q.id]} warn={warns[q.id]}>
                     {isInputQuestion(q) ? (
                       <QuestionInput q={q} value={answers[q.id]} answers={answers} onChange={(v) => update(q.id, v)} setAnswer={update} invalid={!!errors[q.id]}
                         onUpload={onUpload ? (f) => onUpload(q.id, f) : undefined} />
@@ -194,47 +237,86 @@ export function SurveyForm({ survey, initialAnswers, initialSectionId, skipIntro
                 );
               })}
             </div>
-            <Nav onBack={back} canBack={idx > 0 || !skipIntro} onNext={next} nextLabel={idx === visibleSections.length - 1 ? (settings.requireReview !== false ? 'Xem lại' : 'Gửi khảo sát') : 'Tiếp tục'} busy={submitting} />
+            <Nav onBack={back} canBack={idx > 0 || !skipIntro} onNext={next} nextLabel={idx === visibleSections.length - 1 ? (settings.requireReview !== false ? 'Kiểm tra trước khi gửi' : 'Gửi khảo sát') : 'Tiếp tục'} busy={submitting} />
           </section>
+          </div>
         )}
 
-        {stage === 'review' && (
-          <section className="animate-in">
-            <h2 className="text-xl font-bold sm:text-2xl survey-primary-text">Xem lại câu trả lời</h2>
-            <p className="mt-1 text-sm text-muted">Kiểm tra trước khi gửi. Bấm “Sửa” để quay lại phần tương ứng.</p>
-            <div className="mt-5 space-y-4">
-              {visibleSections.map((s) => (
-                <div key={s.id} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <h3 className="font-semibold">{s.title}</h3>
-                    <button onClick={() => goto(s.id)} className="inline-flex items-center gap-1 text-sm font-medium survey-primary-text hover:underline"><Pencil className="h-3.5 w-3.5" />Sửa</button>
-                  </div>
-                  <dl className="divide-y divide-line">
-                    {s.questions.filter((q) => isInputQuestion(q) && vis.questions.has(q.id)).map((q) => (
-                      <div key={q.id} className="grid gap-1 py-2 text-sm sm:grid-cols-[1fr_1.2fr] sm:gap-4">
-                        <dt className="text-muted">{q.title}</dt>
-                        <dd className={cn('font-medium', isEmptyValue(answers[q.id]) && 'font-normal italic text-slate-400')}>{isEmptyValue(answers[q.id]) ? 'Không trả lời' : formatAnswer(q, answers[q.id], answers)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              ))}
+        {stage === 'review' && (() => {
+          let n = 0;
+          const cells = visibleSections.flatMap((s) => s.questions.filter((q) => isInputQuestion(q) && vis.questions.has(q.id)).map((q) => {
+            n++;
+            const empty = isEmptyValue(answers[q.id]);
+            const err = allErrs[q.id];
+            const kind = err ? (empty ? 'miss' : 'bad') : warns[q.id] ? 'warn' : empty ? 'opt' : 'ok';
+            return { q, s, n, kind, err: err ?? warns[q.id] };
+          }));
+          const attn = cells.filter((c) => c.err);
+          const blocking = attn.filter((c) => c.kind !== 'warn').length;
+          const tone: Record<string, string> = { ok: 'bg-emerald-500 text-white', miss: 'bg-red-500 text-white', bad: 'bg-red-200 text-red-900', warn: 'bg-amber-400 text-ink', opt: 'border border-dashed border-slate-400 text-muted' };
+          const jump = (c: (typeof cells)[number]) => { goto(c.s.id); requestAnimationFrame(() => setTimeout(() => document.getElementById(`q-${c.q.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60)); };
+          return (
+          <section className="animate-in rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
+            <h2 className="text-xl font-bold sm:text-2xl survey-primary-text">Kiểm tra các câu đã làm</h2>
+            <p className="mt-1 text-sm text-muted">Bấm vào số câu để quay lại sửa.</p>
+            <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(40px,1fr))] gap-1.5">
+              {cells.map((c) => <button key={c.q.id} type="button" onClick={() => jump(c)} title={c.q.title} aria-label={`Câu ${c.n}`} className={cn('h-10 rounded-lg text-sm font-semibold tabular-nums transition hover:opacity-80', tone[c.kind])}>{c.n}</button>)}
             </div>
-            <div className="mt-8 flex items-center justify-between gap-3">
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+              <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded bg-emerald-500" />Đã trả lời</span>
+              <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded bg-red-500" />Bắt buộc, chưa làm</span>
+              <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded bg-red-200" />Chưa hợp lệ</span>
+              <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded bg-amber-400" />Cần xem lại số liệu</span>
+              <span className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded border border-dashed border-slate-400" />Không bắt buộc, bỏ trống</span>
+            </div>
+            {attn.length > 0 && (
+              <ul className="mt-4 divide-y divide-line rounded-xl ring-1 ring-black/10">
+                {attn.map((c) => (
+                  <li key={c.q.id}><button type="button" onClick={() => jump(c)} className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-black/5">
+                    <span className="min-w-0"><b>Câu {c.n}</b> · {c.q.title}<span className="text-muted"> — {c.kind === 'miss' ? 'chưa trả lời' : c.err}</span></span>
+                    <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', c.kind === 'warn' ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-700')}>{c.kind === 'warn' ? 'Xem lại' : 'Phải sửa'}</span>
+                  </button></li>
+                ))}
+              </ul>
+            )}
+            <details className="mt-4 text-sm">
+              <summary className="cursor-pointer font-medium survey-primary-text">Xem toàn bộ câu trả lời</summary>
+              <div className="mt-3 space-y-4">
+                {visibleSections.map((s) => (
+                  <div key={s.id}>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <h3 className="font-semibold">{s.title}</h3>
+                      <button onClick={() => goto(s.id)} className="inline-flex items-center gap-1 text-sm font-medium survey-primary-text hover:underline"><Pencil className="h-3.5 w-3.5" />Sửa</button>
+                    </div>
+                    <dl className="divide-y divide-line">
+                      {s.questions.filter((q) => isInputQuestion(q) && vis.questions.has(q.id)).map((q) => (
+                        <div key={q.id} className="grid gap-1 py-2 sm:grid-cols-[1fr_1.2fr] sm:gap-4">
+                          <dt className="text-muted">{q.title}</dt>
+                          <dd className={cn('font-medium', isEmptyValue(answers[q.id]) && 'font-normal italic text-slate-400')}>{isEmptyValue(answers[q.id]) ? 'Không trả lời' : formatAnswer(q, answers[q.id], answers)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            </details>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
               <button onClick={back} className="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-medium text-muted hover:bg-black/5"><ArrowLeft className="h-4 w-4" />Quay lại</button>
-              <button onClick={submit} disabled={submitting} className="survey-btn inline-flex h-12 items-center gap-2 rounded-xl px-7 text-base font-semibold shadow-sm disabled:opacity-60">
-                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}Gửi khảo sát
+              <button onClick={submit} disabled={submitting || blocking > 0} title={blocking ? `Còn ${blocking} câu phải sửa` : undefined} className="survey-btn inline-flex h-12 items-center gap-2 rounded-xl px-7 text-base font-semibold shadow-sm disabled:opacity-50">
+                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}Gửi phiếu
               </button>
             </div>
+            {attn.length > 0 && <p className="mt-2 text-right text-xs text-muted">{blocking ? 'Câu bắt buộc và câu chưa hợp lệ phải sửa xong mới gửi được. ' : ''}Câu “Xem lại” chỉ nhắc, vẫn gửi được.</p>}
           </section>
-        )}
+          );
+        })()}
         {footerNote && <div className="mt-10 text-center text-xs text-muted">{footerNote}</div>}
       </main>
     </div>
   );
 }
 
-function QuestionCard({ q, hidden, required, error, children }: { q: Question; hidden: boolean; required: boolean; error?: string; children: ReactNode }) {
+function QuestionCard({ q, hidden, required, error, warn, children }: { q: Question; hidden: boolean; required: boolean; error?: string; warn?: string; children: ReactNode }) {
   const input = isInputQuestion(q);
   return (
     <div id={`q-${q.id}`} className={cn('rounded-2xl bg-white p-5 shadow-sm ring-1 transition sm:p-6', error ? 'ring-red-300' : 'ring-black/5', hidden && 'opacity-50 ring-dashed')}>
@@ -251,6 +333,7 @@ function QuestionCard({ q, hidden, required, error, children }: { q: Question; h
       <div role="group" aria-labelledby={input ? `lbl-${q.id}` : undefined}>{children}</div>
       {q.helpText && input && <p className="mt-2 text-xs text-muted">{q.helpText}</p>}
       {error && <p className="mt-2 text-sm font-medium text-red-600" role="alert">{error}</p>}
+      {!error && warn && <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-sm text-amber-800" role="status">{warn}</p>}
     </div>
   );
 }

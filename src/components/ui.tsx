@@ -85,7 +85,7 @@ export function Badge({ children, tone = 'slate', className }: { children: React
     red: 'bg-red-50 text-red-700',
     purple: 'bg-violet-50 text-violet-700',
   };
-  return <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', tones[tone], className)}>{children}</span>;
+  return <span className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', tones[tone], className)}>{children}</span>;
 }
 export function Spinner({ className }: { className?: string }) {
   return <Loader2 className={cn('h-5 w-5 animate-spin text-brand-600', className)} />;

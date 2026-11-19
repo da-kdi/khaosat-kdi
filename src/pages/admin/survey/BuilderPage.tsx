@@ -1,44 +1,68 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useDraggable, useDroppable, useSensor, useSensors,
-  type DragEndEvent, type DragStartEvent,
+  DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors,
+  type CollisionDetection, type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AlertTriangle, BookmarkPlus, Check, Heading, Loader2, Plus, Redo2, Undo2, Upload } from 'lucide-react';
 import {
-  AlertTriangle, ArrowDown, ArrowUp, Check, Copy, GitBranch, GripVertical, Loader2, Plus, Redo2, Search, Trash2, Undo2,
-  Type, AlignLeft, Mail, Phone, Link2, Hash, Banknote, Percent, Calendar, Clock, CalendarClock, CircleDot, CheckSquare, ChevronDownSquare,
-  ToggleLeft, Star, SlidersHorizontal, Gauge, ListOrdered, Grid3x3, Calculator, LayoutGrid, MapPin, Contact, Paperclip, ShieldCheck,
-  Heading, Pilcrow, Info, Image, Video, ExternalLink, Minus, BookmarkPlus,
-} from 'lucide-react';
-import {
-  GROUP_LABELS, createQuestion, getType, isInputQuestion, lintSchema, typeList,
-  type Question, type QuestionType, type SurveySchema,
+  createQuestion, getType, isInputQuestion, lintSchema, uid,
+  type Question, type QuestionType, type Section, type SurveySchema,
 } from '@core/index.ts';
 import { api } from '@/data';
 import { Badge, Button, Field, Input, Modal, Textarea, cn, useToast } from '@/components/ui';
-import { ContentBlock, QuestionInput } from '@/survey/fields';
-import { themeStyle } from '@/survey/theme';
 import { useSurvey } from './SurveyLayout';
-import { QuestionInspector, SectionInspector } from './builder/Inspector';
-import { describeLogic } from './builder/LogicEditor';
 import * as ops from './builder/schemaOps';
+import { BlockCard, ICONS, QuestionCard, SectionRow, changeType } from './builder/QuestionCard';
+import { ImportPanel } from '../ImportPanel';
+import { rowWarning, rowsToSections, type ImportRow } from '@/lib/importQuestions';
 
-const ICONS: Record<QuestionType, typeof Type> = {
-  short_text: Type, long_text: AlignLeft, email: Mail, phone: Phone, url: Link2, number: Hash, currency: Banknote, percentage: Percent,
-  date: Calendar, time: Clock, datetime: CalendarClock, single_choice: CircleDot, multiple_choice: CheckSquare, dropdown: ChevronDownSquare,
-  yes_no: ToggleLeft, rating: Star, likert: SlidersHorizontal, nps: Gauge, ranking: ListOrdered, matrix: Grid3x3,
-  quantity_by_group: Calculator, category_level: LayoutGrid, address: MapPin, contact: Contact, file_upload: Paperclip, consent: ShieldCheck,
-  heading: Heading, paragraph: Pilcrow, instruction: Info, image: Image, video: Video, link: ExternalLink, divider: Minus,
-};
+/** Danh sách phẳng theo thứ tự hiển thị: phần, rồi các câu / khối trong phần. */
+type Item = { kind: 'section'; id: string; section: Section; si: number } | { kind: 'q'; id: string; q: Question; si: number };
 
-type Selection = { kind: 'question' | 'section'; id: string } | null;
-
-function useMedia(q: string) {
-  const [m, setM] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
-  useEffect(() => { const mq = window.matchMedia(q); const h = () => setM(mq.matches); mq.addEventListener('change', h); return () => mq.removeEventListener('change', h); }, [q]);
-  return m;
+function flatten(schema: SurveySchema): Item[] {
+  return schema.sections.flatMap((section, si) => [
+    { kind: 'section' as const, id: section.id, section, si },
+    ...section.questions.map((q) => ({ kind: 'q' as const, id: q.id, q, si })),
+  ]);
 }
+
+/** Dựng lại schema từ danh sách id phẳng: câu nằm sau phần nào thì thuộc phần đó. */
+function rebuild(schema: SurveySchema, ids: string[], extra: Section[] = []): SurveySchema {
+  const secs = new Map([...schema.sections, ...extra].map((s) => [s.id, s]));
+  const qs = new Map(schema.sections.flatMap((s) => s.questions).map((q) => [q.id, q]));
+  const out: Section[] = [];
+  const orphan: Question[] = [];
+  for (const id of ids) {
+    const sec = secs.get(id);
+    if (sec) { out.push({ ...sec, questions: [] }); continue; }
+    const q = qs.get(id);
+    if (q) (out.length ? out[out.length - 1].questions : orphan).push(q);
+  }
+  if (orphan.length) { if (out.length) out[0].questions.unshift(...orphan); else out.push({ id: uid('s'), title: 'Phần 1', questions: orphan }); }
+  return { ...schema, sections: out };
+}
+
+function cloneQuestion(src: Question, codes: string[]): Question {
+  const copy: Question = JSON.parse(JSON.stringify(src));
+  copy.id = uid('q');
+  let n = 2;
+  let code = `${src.code}_${n}`;
+  while (codes.includes(code)) code = `${src.code}_${++n}`;
+  copy.code = code;
+  codes.push(code);
+  copy.options = copy.options?.map((o) => ({ ...o, id: uid('opt') }));
+  copy.rows = copy.rows?.map((o) => ({ ...o, id: uid('row') }));
+  return copy;
+}
+
+const strip = (id: string) => id.replace(/^[co]:/, '');
+/** chỉ va chạm với mục cùng danh sách (mục lục với mục lục, thẻ với thẻ) */
+const sameList: CollisionDetection = (args) => {
+  const p = String(args.active.id).slice(0, 2);
+  return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => String(c.id).startsWith(p)) });
+};
 
 export default function BuilderPage() {
   const { survey, versions, setSurvey, canEdit } = useSurvey();
@@ -47,20 +71,18 @@ export default function BuilderPage() {
   const [past, setPast] = useState<SurveySchema[]>([]);
   const [future, setFuture] = useState<SurveySchema[]>([]);
   const lastPush = useRef(0);
-  const [sel, setSel] = useState<Selection>(() => (survey.draftSchema.sections[0] ? { kind: 'section', id: survey.draftSchema.sections[0].id } : null));
+  const [focus, setFocus] = useState<string | null>(() => survey.draftSchema.sections[0]?.id ?? null);
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'dirty' | 'error'>('saved');
-  const [dragLabel, setDragLabel] = useState<string | null>(null);
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [dragging, setDragging] = useState<string | null>(null);
   const [saveTpl, setSaveTpl] = useState(false);
-  const wide = useMedia('(min-width: 1180px)');
   const saveTimer = useRef<number>();
 
   // ── history-aware setter (typing within 700ms coalesces into one undo step)
-  // keep the latest schema in a ref so updates are computed synchronously (no side effects inside state updaters)
   const schemaRef = useRef(schema);
   schemaRef.current = schema;
   const lastKey = useRef<string | null>(null);
-  /** coalesceKey: consecutive edits to the same item within 700ms become one undo step */
+  const [importing, setImporting] = useState(false);
+  const [importRows, setImportRows] = useState<ImportRow[] | null>(null);
   const setSchema = useCallback((updater: (s: SurveySchema) => SurveySchema, coalesceKey?: string) => {
     const prev = schemaRef.current;
     const next = updater(prev);
@@ -73,8 +95,8 @@ export default function BuilderPage() {
     setSchemaRaw(next);
     setSaveState('dirty');
   }, []);
-  const undo = () => { if (!past.length) return; setFuture((f) => [schema, ...f]); schemaRef.current = past[past.length - 1]; setSchemaRaw(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setSaveState('dirty'); };
-  const redo = () => { if (!future.length) return; setPast((p) => [...p, schema]); schemaRef.current = future[0]; setSchemaRaw(future[0]); setFuture((f) => f.slice(1)); setSaveState('dirty'); };
+  const undo = () => { if (!past.length) return; setFuture((f) => [schema, ...f]); schemaRef.current = past[past.length - 1]; setSchemaRaw(past[past.length - 1]); setPast((p) => p.slice(0, -1)); lastKey.current = null; setSaveState('dirty'); };
+  const redo = () => { if (!future.length) return; setPast((p) => [...p, schema]); schemaRef.current = future[0]; setSchemaRaw(future[0]); setFuture((f) => f.slice(1)); lastKey.current = null; setSaveState('dirty'); };
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -121,241 +143,200 @@ export default function BuilderPage() {
     }
     return { qCodes, opt, rows };
   }, [versions]);
+  const empty = useMemo(() => new Set<string>(), []);
 
   const issues = useMemo(() => lintSchema(schema), [schema]);
   const issueBy = useMemo(() => { const m = new Map<string, string[]>(); for (const i of issues) m.set(i.questionId, [...(m.get(i.questionId) ?? []), i.message]); return m; }, [issues]);
-  const allQs = schema.sections.flatMap((s) => s.questions);
+  const items = useMemo(() => flatten(schema), [schema]);
+  const numbers = useMemo(() => { const m = new Map<string, number>(); let n = 0; for (const it of items) if (it.kind === 'q' && isInputQuestion(it.q)) m.set(it.id, ++n); return m; }, [items]);
+  const nInput = numbers.size;
 
-  // ── add / move
-  const addQuestion = (type: QuestionType, sectionId?: string, index?: number) => {
+  const scrollTo = (id: string) => requestAnimationFrame(() => document.getElementById(`qc-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+
+  // ── thêm sau mục đang chọn
+  const insertAfterFocus = (s: SurveySchema, q: Question, atEnd?: boolean): SurveySchema => {
+    if (!s.sections.length) { const r = ops.addSection(s); s = r.schema; }
+    if (!atEnd && focus) {
+      const loc = ops.locate(s, focus);
+      if (loc) return ops.insertQuestion(s, s.sections[loc.si].id, loc.qi + 1, q);
+      if (s.sections.some((x) => x.id === focus)) return ops.insertQuestion(s, focus, 0, q);
+    }
+    const last = s.sections[s.sections.length - 1];
+    return ops.insertQuestion(s, last.id, last.questions.length, q);
+  };
+  const add = (type: QuestionType, atEnd?: boolean) => {
     if (!canEdit) return;
     const q = createQuestion(type, ops.allCodes(schema));
+    setSchema((s) => insertAfterFocus(s, q, atEnd));
+    setFocus(q.id);
+    scrollTo(q.id);
+  };
+  const addSection = () => {
+    if (!canEdit) return;
+    const sec: Section = { id: uid('s'), title: `Phần ${schema.sections.length + 1}`, questions: [] };
     setSchema((s) => {
-      let target = sectionId;
-      let idx = index;
-      if (!target) {
-        if (sel?.kind === 'question') { const loc = ops.locate(s, sel.id); if (loc) { target = s.sections[loc.si].id; idx = loc.qi + 1; } }
-        else if (sel?.kind === 'section') target = sel.id;
-        target ??= s.sections[s.sections.length - 1]?.id;
-      }
-      if (!target) { const r = ops.addSection(s); s = r.schema; target = r.id; }
-      return ops.insertQuestion(s, target, idx ?? Number.MAX_SAFE_INTEGER, q);
+      const ids = flatten(s).map((x) => x.id);
+      const at = focus ? ids.indexOf(focus) : -1;
+      ids.splice(at < 0 ? ids.length : at + 1, 0, sec.id);
+      return rebuild(s, ids, [sec]);
     });
-    setSel({ kind: 'question', id: q.id });
-    setPaletteOpen(false);
-    requestAnimationFrame(() => document.getElementById(`bq-${q.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    setFocus(sec.id);
+    scrollTo(sec.id);
+  };
+  const dupQuestion = (id: string) => { const r = ops.duplicateQuestion(schema, id, ops.allCodes(schema)); setSchema(() => r.schema); setFocus(r.newId); scrollTo(r.newId); };
+  const delQuestion = (q: Question) => {
+    if (isInputQuestion(q) && locked.qCodes.has(q.code) && !confirm(`Câu "${q.title}" đã có trong phiên bản đã xuất bản. Xóa khỏi bản nháp? Dữ liệu cũ vẫn giữ nguyên.`)) return;
+    const ids = items.map((x) => x.id); const i = ids.indexOf(q.id);
+    setSchema((s) => ops.removeQuestion(s, q.id)); setFocus(ids[i - 1] ?? null);
+  };
+  const dupSection = (sec: Section) => {
+    const codes = ops.allCodes(schema);
+    const copy: Section = { ...JSON.parse(JSON.stringify(sec)), id: uid('s'), title: `${sec.title} (bản sao)`, questions: sec.questions.map((q) => cloneQuestion(q, codes)) };
+    setSchema((s) => { const i = s.sections.findIndex((x) => x.id === sec.id); const sections = [...s.sections]; sections.splice(i + 1, 0, copy); return { ...s, sections }; });
+    setFocus(copy.id); scrollTo(copy.id);
+  };
+  const delSection = (sec: Section) => {
+    if (sec.questions.length && !confirm(`Xóa phần "${sec.title}" và ${sec.questions.length} mục bên trong?`)) return;
+    setSchema((s) => ops.removeSection(s, sec.id)); setFocus(null);
   };
 
+  // ── kéo thả (mục lục và thẻ dùng chung một danh sách)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
-  const onDragStart = (e: DragStartEvent) => {
-    const id = String(e.active.id);
-    setDragLabel(id.startsWith('new:') ? getType(id.slice(4) as QuestionType).label : allQs.find((q) => q.id === id)?.title ?? '');
-  };
+  const onDragStart = (e: DragStartEvent) => setDragging(strip(String(e.active.id)));
   const onDragEnd = (e: DragEndEvent) => {
-    setDragLabel(null);
-    const { active, over } = e;
-    if (!over || !canEdit) return;
-    const a = String(active.id);
-    const o = String(over.id);
-    let sectionId: string;
-    let index: number;
-    if (o.startsWith('sec:')) {
-      sectionId = o.slice(4);
-      index = schema.sections.find((s) => s.id === sectionId)?.questions.length ?? 0;
+    setDragging(null);
+    if (!e.over || !canEdit) return;
+    const a = strip(String(e.active.id));
+    const o = strip(String(e.over.id));
+    if (a === o) return;
+    const isSec = schema.sections.some((s) => s.id === a);
+    if (isSec) {
+      // kéo một phần: chuyển cả phần (kèm câu bên trong) tới vị trí phần chứa mục đích
+      const from = schema.sections.findIndex((s) => s.id === a);
+      const target = items.find((x) => x.id === o);
+      if (!target) return;
+      setSchema((s) => ({ ...s, sections: arrayMove(s.sections, from, target.si) }));
     } else {
-      const loc = ops.locate(schema, o);
-      if (!loc) return;
-      sectionId = schema.sections[loc.si].id;
-      const from = ops.locate(schema, a);
-      index = from && from.si === loc.si && from.qi < loc.qi ? loc.qi + 1 : loc.qi;
+      const ids = items.map((x) => x.id);
+      const next = arrayMove(ids, ids.indexOf(a), ids.indexOf(o));
+      setSchema((s) => rebuild(s, next));
     }
-    if (a.startsWith('new:')) addQuestion(a.slice(4) as QuestionType, sectionId, index);
-    else if (a !== o) setSchema((s) => ops.moveQuestion(s, a, sectionId, index));
+    setFocus(a);
   };
 
-  const selectedQ = sel?.kind === 'question' ? allQs.find((q) => q.id === sel.id) : undefined;
-  const selectedS = sel?.kind === 'section' ? schema.sections.find((s) => s.id === sel.id) : undefined;
+  const dragItem = dragging ? items.find((x) => x.id === dragging) : undefined;
+  const label = (it: Item) => (it.kind === 'section' ? it.section.title || 'Chưa đặt tên' : it.q.title || getType(it.q.type).label);
 
-  const inspector = selectedQ ? (
-    <QuestionInspector key={selectedQ.id} q={selectedQ} schema={schema} disabled={!canEdit}
-      onChange={(p) => setSchema((s) => ops.updateQuestion(s, selectedQ.id, p), `q:${selectedQ.id}:${Object.keys(p).join()}`)}
-      lockedCodes={{ options: locked.opt.get(selectedQ.code) ?? new Set(), rows: locked.rows.get(selectedQ.code) ?? new Set() }}
-      publishedQuestionCodes={locked.qCodes} />
-  ) : selectedS ? (
-    <SectionInspector key={selectedS.id} section={selectedS} schema={schema} disabled={!canEdit} onChange={(p) => setSchema((s) => ops.updateSection(s, selectedS.id, p), `s:${selectedS.id}:${Object.keys(p).join()}`)} />
-  ) : <p className="py-10 text-center text-sm text-muted">Chọn một câu hỏi hoặc phần để cấu hình.</p>;
+  const tb = (icon: typeof Plus, text: string, onClick: () => void) => {
+    const I = icon;
+    return <button type="button" onClick={onClick} disabled={!canEdit} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[13px] font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-40"><I className="h-4 w-4" />{text}</button>;
+  };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="flex h-[calc(100vh-113px)] min-h-[560px]">
-        {/* LEFT — palette & outline */}
-        {wide && (
-          <aside className="thin-scroll w-60 shrink-0 overflow-y-auto border-r border-line bg-white p-3">
-            <Palette onAdd={(t) => addQuestion(t)} disabled={!canEdit} />
-          </aside>
-        )}
+    <DndContext sensors={sensors} collisionDetection={sameList} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div className="grid h-[calc(100vh-140px)] min-h-[560px] grid-rows-[minmax(0,1fr)] gap-3.5 bg-surface px-3 py-3 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] sm:px-5">
+        {/* TRÁI — mục lục */}
+        <nav aria-label="Mục lục câu hỏi" className="thin-scroll hidden overflow-y-auto overscroll-contain rounded-md border border-line bg-white p-2 md:block">
+          <SortableContext items={items.map((x) => `o:${x.id}`)} strategy={verticalListSortingStrategy}>
+            {items.map((it) => (
+              <OutlineRow key={it.id} it={it} n={numbers.get(it.id)} on={focus === it.id} canEdit={canEdit} text={label(it)} warn={issueBy.has(it.id)}
+                onClick={() => { setFocus(it.id); scrollTo(it.id); }} />
+            ))}
+          </SortableContext>
+          {!items.length && <p className="px-2 py-6 text-center text-sm text-muted">Chưa có câu hỏi nào.</p>}
+          <div className="mt-2 grid gap-1.5 border-t border-line p-2 pt-3">
+            <span className="text-xs text-muted">Kéo thả để đổi thứ tự. Số câu tự đánh lại.</span>
+            <Button variant="outline" size="sm" onClick={() => setImporting(true)}><Upload className="h-4 w-4" />Nhập thêm từ file</Button>
+          </div>
+        </nav>
 
-        {/* CENTER — canvas */}
-        <div className="thin-scroll min-w-0 flex-1 overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) setSel(null); }}>
-          <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-white/95 px-4 py-2 backdrop-blur">
-            {!wide && canEdit && <Button size="sm" onClick={() => setPaletteOpen(true)}><Plus className="h-4 w-4" />Thêm</Button>}
-            <Button size="icon" variant="ghost" onClick={undo} disabled={!past.length} title="Hoàn tác (Ctrl+Z)" aria-label="Hoàn tác"><Undo2 className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" onClick={redo} disabled={!future.length} title="Làm lại (Ctrl+Shift+Z)" aria-label="Làm lại"><Redo2 className="h-4 w-4" /></Button>
-            <span className="text-xs text-muted">
-              {saveState === 'saving' ? <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" />Đang lưu…</span>
-                : saveState === 'dirty' ? 'Chưa lưu' : saveState === 'error' ? <span className="text-red-600">Lỗi lưu</span>
-                : <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-emerald-600" />Đã lưu bản nháp</span>}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
+        {/* PHẢI — toàn bộ câu hỏi, sửa trực tiếp */}
+        <div className="thin-scroll min-w-0 overflow-y-auto overscroll-contain" id="builder-pane">
+          <div role="toolbar" aria-label="Thêm vào khảo sát" className="sticky top-0 z-30 mb-2.5 flex flex-wrap items-center gap-1 rounded-md border border-line bg-white/95 px-2.5 py-1.5 shadow-sm backdrop-blur">
+            <span className="mr-1 text-[12.5px] text-muted">Thêm sau mục đang chọn:</span>
+            {tb(Plus, 'Câu hỏi', () => add('single_choice'))}
+            {tb(Heading, 'Phần mới', addSection)}
+            <span className="mx-1 h-5 w-px bg-line" />
+            {tb(ICONS.instruction, 'Đoạn hướng dẫn', () => add('instruction'))}
+            {tb(ICONS.image, 'Hình ảnh', () => add('image'))}
+            {tb(ICONS.video, 'Video', () => add('video'))}
+            {tb(ICONS.link, 'Liên kết', () => add('link'))}
+            <div className="ml-auto flex items-center gap-1">
               {issues.length > 0 && <Badge tone="red"><AlertTriangle className="h-3 w-3" />{issues.length} lỗi cấu hình</Badge>}
-              <span className="hidden text-xs text-muted sm:inline">{allQs.filter(isInputQuestion).length} câu hỏi · {schema.sections.length} phần</span>
-              {canEdit && <Button size="sm" variant="ghost" onClick={() => setSaveTpl(true)} title="Lưu thành mẫu"><BookmarkPlus className="h-4 w-4" /></Button>}
+              <span className="px-1 text-xs text-muted">
+                {saveState === 'saving' ? <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" />Đang lưu…</span>
+                  : saveState === 'dirty' ? 'Chưa lưu' : saveState === 'error' ? <span className="text-red-600">Lỗi lưu</span>
+                  : <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-emerald-600" />Đã lưu nháp</span>}
+              </span>
+              <Button size="icon" variant="ghost" onClick={undo} disabled={!past.length} title="Hoàn tác (Ctrl+Z)" aria-label="Hoàn tác"><Undo2 className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" onClick={redo} disabled={!future.length} title="Làm lại (Ctrl+Shift+Z)" aria-label="Làm lại"><Redo2 className="h-4 w-4" /></Button>
+              {canEdit && <Button size="icon" variant="ghost" onClick={() => setSaveTpl(true)} title="Lưu thành mẫu" aria-label="Lưu thành mẫu"><BookmarkPlus className="h-4 w-4" /></Button>}
             </div>
           </div>
 
-          <div className="mx-auto max-w-3xl space-y-6 px-4 py-6" style={themeStyle(survey.theme)}>
-            {schema.sections.map((sec, si) => (
-              <SectionBlock key={sec.id} sectionId={sec.id} selected={sel?.kind === 'section' && sel.id === sec.id}
-                header={
-                  <div className="flex items-start gap-2" onClick={() => setSel({ kind: 'section', id: sec.id })}>
-                    <div className="min-w-0 flex-1 cursor-pointer">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Phần {si + 1}/{schema.sections.length}</p>
-                      <h3 className="text-lg font-bold text-brand-700">{sec.title || 'Chưa đặt tên'}</h3>
-                      {sec.description && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{sec.description}</p>}
-                      {sec.logic?.visibleIf?.rules.length ? <p className="mt-1 inline-flex items-center gap-1 rounded bg-violet-50 px-1.5 py-0.5 text-xs text-violet-700"><GitBranch className="h-3 w-3" />Hiện khi: {describeLogic(sec.logic.visibleIf, allQs)}</p> : null}
-                    </div>
-                    {canEdit && (
-                      <div className="flex shrink-0 gap-0.5">
-                        <IconBtn onClick={() => setSchema((s) => ops.moveSection(s, sec.id, -1))} disabled={si === 0} label="Lên"><ArrowUp className="h-4 w-4" /></IconBtn>
-                        <IconBtn onClick={() => setSchema((s) => ops.moveSection(s, sec.id, 1))} disabled={si === schema.sections.length - 1} label="Xuống"><ArrowDown className="h-4 w-4" /></IconBtn>
-                        <IconBtn danger onClick={() => { if (sec.questions.length && !confirm(`Xóa phần "${sec.title}" và ${sec.questions.length} câu hỏi bên trong?`)) return; setSchema((s) => ops.removeSection(s, sec.id)); setSel(null); }} label="Xóa phần"><Trash2 className="h-4 w-4" /></IconBtn>
-                      </div>
-                    )}
-                  </div>
-                }>
-                <SortableContext items={sec.questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
-                  {sec.questions.map((q, qi) => (
-                    <SortableQuestion key={q.id} q={q} selected={sel?.kind === 'question' && sel.id === q.id} canEdit={canEdit} issues={issueBy.get(q.id)}
-                      logicText={describeLogic(q.logic?.visibleIf, allQs)}
-                      onSelect={() => setSel({ kind: 'question', id: q.id })}
-                      onDuplicate={() => { const r = ops.duplicateQuestion(schema, q.id, ops.allCodes(schema)); setSchema(() => r.schema); setSel({ kind: 'question', id: r.newId }); }}
-                      onDelete={() => { setSchema((s) => ops.removeQuestion(s, q.id)); setSel({ kind: 'section', id: sec.id }); }}
-                      onMove={(d) => {
-                        const target = qi + d;
-                        if (target < 0 && si > 0) setSchema((s) => ops.moveQuestion(s, q.id, schema.sections[si - 1].id, schema.sections[si - 1].questions.length));
-                        else if (target >= sec.questions.length && si < schema.sections.length - 1) setSchema((s) => ops.moveQuestion(s, q.id, schema.sections[si + 1].id, 0));
-                        else if (target >= 0 && target < sec.questions.length) setSchema((s) => ops.moveQuestion(s, q.id, sec.id, d > 0 ? target + 1 : target));
-                      }} />
-                  ))}
-                </SortableContext>
-                {!sec.questions.length && <p className="rounded-xl border-2 border-dashed border-line py-8 text-center text-sm text-muted">Kéo câu hỏi từ thanh bên trái vào đây{!wide && ' hoặc bấm "Thêm"'}</p>}
-                {canEdit && <button onClick={() => { setSel({ kind: 'section', id: sec.id }); wide ? addQuestion('short_text', sec.id) : setPaletteOpen(true); }} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line py-2 text-sm text-muted transition hover:border-brand-300 hover:text-brand-700"><Plus className="h-4 w-4" />Thêm câu hỏi vào phần này</button>}
-              </SectionBlock>
-            ))}
-            {canEdit && <Button variant="outline" className="w-full border-dashed" onClick={() => { const r = ops.addSection(schema); setSchema(() => r.schema); setSel({ kind: 'section', id: r.id }); }}><Plus className="h-4 w-4" />Thêm phần mới</Button>}
-          </div>
+          <SortableContext items={items.map((x) => `c:${x.id}`)} strategy={verticalListSortingStrategy}>
+            <div className="grid content-start gap-2.5">
+              {items.map((it) => it.kind === 'section' ? (
+                <SectionRow key={it.id} section={it.section} idx={it.si} schema={schema} focused={focus === it.id} canEdit={canEdit} onFocus={() => setFocus(it.id)}
+                  onChange={(p, k) => setSchema((s) => ops.updateSection(s, it.id, p), `s:${it.id}:${k ?? Object.keys(p).join()}`)}
+                  onDup={() => dupSection(it.section)} onDel={() => delSection(it.section)} />
+              ) : isInputQuestion(it.q) ? (
+                <QuestionCard key={it.id} q={it.q} n={numbers.get(it.id) ?? 0} schema={schema} focused={focus === it.id} canEdit={canEdit} issues={issueBy.get(it.id)}
+                  lockedOptions={locked.opt.get(it.q.code) ?? empty} lockedRows={locked.rows.get(it.q.code) ?? empty} codeLocked={locked.qCodes.has(it.q.code)}
+                  onFocus={() => setFocus(it.id)}
+                  onChange={(p, k) => setSchema((s) => ops.updateQuestion(s, it.id, p), `q:${it.id}:${k ?? Object.keys(p).join()}`)}
+                  onType={(t) => setSchema((s) => ops.updateQuestion(s, it.id, (q) => changeType(q, t, ops.allCodes(s))))}
+                  onDup={() => dupQuestion(it.id)} onDel={() => delQuestion(it.q)} />
+              ) : (
+                <BlockCard key={it.id} q={it.q} schema={schema} focused={focus === it.id} canEdit={canEdit} onFocus={() => setFocus(it.id)}
+                  onChange={(p, k) => setSchema((s) => ops.updateQuestion(s, it.id, p), `q:${it.id}:${k ?? Object.keys(p).join()}`)}
+                  onDup={() => dupQuestion(it.id)} onDel={() => delQuestion(it.q)} />
+              ))}
+            </div>
+          </SortableContext>
+          {canEdit && (
+            <button type="button" onClick={() => add('single_choice', true)} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 bg-white py-2.5 text-sm font-medium text-brand-700 hover:border-brand-400 hover:bg-brand-50">
+              <Plus className="h-4 w-4" />Thêm câu hỏi vào cuối
+            </button>
+          )}
+          <p className="py-3 text-center text-xs text-muted">{nInput} câu hỏi · {schema.sections.length} phần</p>
         </div>
-
-        {/* RIGHT — inspector */}
-        {wide ? (
-          <aside className="thin-scroll w-[360px] shrink-0 overflow-y-auto border-l border-line bg-white p-4">{inspector}</aside>
-        ) : (
-          <Modal open={!!sel} onClose={() => setSel(null)} title={selectedQ ? 'Cấu hình câu hỏi' : 'Cấu hình phần'}>{inspector}</Modal>
-        )}
       </div>
-      <DragOverlay dropAnimation={null}>{dragLabel && <div className="rounded-lg border border-brand-300 bg-white px-3 py-2 text-sm font-medium shadow-lg">{dragLabel}</div>}</DragOverlay>
-      <Modal open={paletteOpen} onClose={() => setPaletteOpen(false)} title="Thêm câu hỏi / nội dung" size="lg"><Palette onAdd={(t) => addQuestion(t)} grid /></Modal>
+      <DragOverlay dropAnimation={null}>{dragItem && <div className="max-w-xs truncate rounded-md border border-brand-300 bg-white px-3 py-2 text-sm font-medium shadow-lg">{label(dragItem)}</div>}</DragOverlay>
+      <Modal open={importing} onClose={() => { setImporting(false); setImportRows(null); }} title="Nhập thêm câu hỏi từ file" size="xl"
+        footer={<><Button variant="outline" onClick={() => { setImporting(false); setImportRows(null); }}>Hủy</Button><Button disabled={!importRows || importRows.some((r) => rowWarning(r))} onClick={() => {
+          if (!importRows) return;
+          setSchema((s) => { const add = rowsToSections(importRows, ops.allCodes(s), 'Phần nhập từ file'); return { ...s, sections: [...s.sections, ...add] }; });
+          toast(`Đã thêm ${importRows.filter((r) => r.kind === 'q').length} câu vào cuối bảng hỏi`);
+          setImporting(false); setImportRows(null);
+        }}>Thêm vào cuối bảng hỏi</Button></>}>
+        <ImportPanel rows={importRows} onRows={setImportRows} />
+      </Modal>
       {saveTpl && <SaveTemplateModal schema={schema} onClose={() => setSaveTpl(false)} />}
     </DndContext>
   );
 }
 
-function IconBtn({ children, onClick, disabled, label, danger }: { children: ReactNode; onClick: () => void; disabled?: boolean; label: string; danger?: boolean }) {
-  return <button type="button" onClick={(e) => { e.stopPropagation(); onClick(); }} disabled={disabled} aria-label={label} title={label}
-    className={cn('rounded-md p-1.5 text-muted transition disabled:opacity-25', danger ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-slate-100 hover:text-ink')}>{children}</button>;
-}
-
-function Palette({ onAdd, disabled, grid }: { onAdd: (t: QuestionType) => void; disabled?: boolean; grid?: boolean }) {
-  const [q, setQ] = useState('');
-  const groups = (['text', 'choice', 'structured', 'content'] as const).map((g) => ({ g, items: typeList.filter((t) => t.group === g && (!q || t.label.toLowerCase().includes(q.toLowerCase()))) }));
-  return (
-    <div>
-      <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-        <Input className="h-9 pl-8" placeholder="Tìm loại câu hỏi…" value={q} onChange={(e) => setQ(e.target.value)} />
+function OutlineRow({ it, n, on, canEdit, text, warn, onClick }: { it: Item; n?: number; on: boolean; canEdit: boolean; text: string; warn: boolean; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `o:${it.id}`, disabled: !canEdit });
+  const style = { transform: CSS.Translate.toString(transform), transition };
+  if (it.kind === 'section') {
+    return (
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={onClick} title="Kéo để đổi vị trí"
+        className={cn('cursor-pointer truncate rounded px-2 pb-1 pt-2.5 text-xs font-bold uppercase tracking-wider text-muted hover:text-brand-700', on && 'text-brand-700', isDragging && 'opacity-50', canEdit && 'cursor-grab active:cursor-grabbing')}>
+        {text}
       </div>
-      {groups.filter((g) => g.items.length).map(({ g, items }) => (
-        <div key={g} className="mb-4">
-          <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted">{GROUP_LABELS[g]}</p>
-          <div className={cn(grid ? 'grid grid-cols-2 gap-1.5 sm:grid-cols-3' : 'space-y-0.5')}>
-            {items.map((t) => <PaletteItem key={t.type} type={t.type} label={t.label} onAdd={onAdd} disabled={disabled} draggable={!grid} />)}
-          </div>
-        </div>
-      ))}
-      {!grid && <p className="mt-2 px-1 text-xs text-muted">Kéo vào canvas hoặc bấm để thêm sau mục đang chọn.</p>}
-    </div>
-  );
-}
-
-function PaletteItem({ type, label, onAdd, disabled, draggable }: { type: QuestionType; label: string; onAdd: (t: QuestionType) => void; disabled?: boolean; draggable: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: `new:${type}`, disabled: disabled || !draggable });
-  const Icon = ICONS[type];
+    );
+  }
+  const Icon = ICONS[it.q.type];
+  const input = isInputQuestion(it.q);
   return (
-    <button ref={setNodeRef} type="button" onClick={() => onAdd(type)} disabled={disabled} {...(draggable ? listeners : {})} {...(draggable ? attributes : {})}
-      className={cn('flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm text-slate-700 transition hover:bg-brand-50 hover:text-brand-700 disabled:opacity-40', isDragging && 'opacity-40', draggable && 'cursor-grab active:cursor-grabbing')}>
-      <Icon className="h-4 w-4 shrink-0 text-brand-500" />{label}
+    <button ref={setNodeRef} style={style} {...attributes} {...listeners} type="button" onClick={onClick}
+      className={cn('flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-surface', on && 'bg-brand-50 font-semibold text-brand-700', isDragging && 'opacity-50', canEdit && 'active:cursor-grabbing')}>
+      <span className="w-6 shrink-0 tabular-nums text-muted">{input ? `${n}.` : <Icon className="mt-0.5 h-3.5 w-3.5" />}</span>
+      <span className={cn('min-w-0 flex-1 line-clamp-2', !input && 'text-muted')}>{text}</span>
+      {warn && <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />}
     </button>
-  );
-}
-
-function SectionBlock({ sectionId, header, children, selected }: { sectionId: string; header: ReactNode; children: ReactNode; selected: boolean }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `sec:${sectionId}` });
-  return (
-    <section ref={setNodeRef} className={cn('rounded-2xl border bg-white/60 p-4 transition', selected ? 'border-accent-400 ring-1 ring-accent-400' : 'border-line', isOver && 'bg-brand-50/60')}>
-      <div className="mb-3">{header}</div>
-      <div className="space-y-3">{children}</div>
-    </section>
-  );
-}
-
-function SortableQuestion({ q, selected, onSelect, onDuplicate, onDelete, onMove, canEdit, issues, logicText }: {
-  q: Question; selected: boolean; onSelect: () => void; onDuplicate: () => void; onDelete: () => void; onMove: (d: -1 | 1) => void; canEdit: boolean; issues?: string[]; logicText: string;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: q.id, disabled: !canEdit });
-  const def = getType(q.type);
-  const Icon = ICONS[q.type];
-  return (
-    <div id={`bq-${q.id}`} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('group relative rounded-xl border bg-white transition', selected ? 'border-brand-500 shadow-md ring-1 ring-brand-500' : 'border-line hover:border-slate-300', isDragging && 'z-20 opacity-60', issues && 'border-red-300')}
-      onClick={onSelect}>
-      <div className="flex items-center gap-1.5 border-b border-line/70 px-2 py-1.5">
-        {canEdit && <button type="button" {...attributes} {...listeners} className="cursor-grab rounded p-1 text-slate-400 hover:bg-slate-100 active:cursor-grabbing" aria-label="Kéo để sắp xếp" onClick={(e) => e.stopPropagation()}><GripVertical className="h-4 w-4" /></button>}
-        <Icon className="h-3.5 w-3.5 text-brand-500" />
-        <span className="text-xs font-medium text-muted">{def.label}</span>
-        {def.isInput && <span className="font-mono text-[11px] text-slate-400">{q.code}</span>}
-        {q.required && <Badge tone="red" className="!py-0">Bắt buộc</Badge>}
-        {logicText && <span className="inline-flex max-w-[45%] items-center gap-1 truncate rounded bg-violet-50 px-1.5 text-[11px] text-violet-700" title={logicText}><GitBranch className="h-3 w-3 shrink-0" /><span className="truncate">{logicText}</span></span>}
-        {q.logic?.requiredIf?.rules.length ? <span className="rounded bg-red-50 px-1.5 text-[11px] text-red-700">Bắt buộc có điều kiện</span> : null}
-        {canEdit && (
-          <div className={cn('ml-auto flex gap-0.5 transition', selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100')}>
-            <IconBtn onClick={() => onMove(-1)} label="Lên"><ArrowUp className="h-3.5 w-3.5" /></IconBtn>
-            <IconBtn onClick={() => onMove(1)} label="Xuống"><ArrowDown className="h-3.5 w-3.5" /></IconBtn>
-            <IconBtn onClick={onDuplicate} label="Nhân bản"><Copy className="h-3.5 w-3.5" /></IconBtn>
-            <IconBtn danger onClick={onDelete} label="Xóa"><Trash2 className="h-3.5 w-3.5" /></IconBtn>
-          </div>
-        )}
-      </div>
-      <div className="pointer-events-none p-4">
-        {def.isInput ? (
-          <>
-            <p className="font-semibold leading-snug">{q.title || <span className="text-muted">Chưa có nội dung</span>}{q.required && <span className="ml-1 text-red-500">*</span>}</p>
-            {q.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{q.description}</p>}
-            <div className="mt-3 select-none" aria-hidden><QuestionInput q={q} value={q.defaultValue} onChange={() => {}} answers={{}} setAnswer={() => {}} disabled /></div>
-          </>
-        ) : <ContentBlock q={q} />}
-      </div>
-      {issues && <div className="border-t border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-700">{issues.join(' · ')}</div>}
-    </div>
   );
 }
 
@@ -380,4 +361,3 @@ function SaveTemplateModal({ schema, onClose }: { schema: SurveySchema; onClose:
     </Modal>
   );
 }
-

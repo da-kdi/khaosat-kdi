@@ -258,9 +258,9 @@ export function questionStats(q: Question, responses: PreparedResponse[]): Quest
       }).sort((a, b) => a.avgRank - b.avgRank);
       break;
     }
-    case 'matrix': case 'quantity_by_group': case 'category_level': {
-      const rows = (q.rows ?? []).map((r) => ({ code: r.code, label: r.label }));
-      const cols = q.type === 'quantity_by_group' ? [{ code: 'qty', label: 'Số lượng' }] : (q.options ?? []).map((o) => ({ code: o.code, label: o.label }));
+    case 'matrix': case 'quantity_by_group': case 'category_level': case 'number_grid': case 'number_range': {
+      const rows = q.type === 'number_range' ? [{ code: 'min', label: 'Tối thiểu' }, { code: 'max', label: 'Tối đa' }] : (q.rows ?? []).map((r) => ({ code: r.code, label: r.label }));
+      const cols = q.type === 'quantity_by_group' || q.type === 'number_range' ? [{ code: 'qty', label: q.settings?.unit ? `Số lượng (${q.settings.unit})` : 'Số lượng' }] : (q.options ?? []).map((o) => ({ code: o.code, label: o.label }));
       const cells: Record<string, Record<string, number>> = {};
       const respondents: Record<string, Record<string, number>> = {};
       for (const r of rows) { cells[r.code] = {}; respondents[r.code] = {}; for (const c of cols) { cells[r.code][c.code] = 0; respondents[r.code][c.code] = 0; } }
@@ -273,6 +273,8 @@ export function questionStats(q: Question, responses: PreparedResponse[]): Quest
         if (q.type === 'matrix') for (const [r, sel] of Object.entries(v as Record<string, unknown>)) for (const c of Array.isArray(sel) ? sel : [sel]) add(r, String(c), 1);
         if (q.type === 'quantity_by_group') for (const [r, n] of Object.entries(v as Record<string, unknown>)) { if (n !== '' && n != null) add(r, 'qty', Number(n)); }
         if (q.type === 'category_level') for (const [r, cs] of Object.entries(v as GridValue)) for (const [c, n] of Object.entries(cs ?? {})) if (Number(n) > 0) add(r, c, Number(n));
+        if (q.type === 'number_grid') for (const [r, cs] of Object.entries(v as Record<string, Record<string, unknown>>)) for (const [c, n] of Object.entries(cs ?? {})) if (n !== '' && n != null && Number.isFinite(Number(n))) add(r, c, Number(n));
+        if (q.type === 'number_range') for (const k of ['min', 'max']) { const n = (v as Record<string, unknown>)[k]; if (n !== '' && n != null && Number.isFinite(Number(n))) add(k, 'qty', Number(n)); }
       }
       const rowTotals: Record<string, number> = {};
       const colTotals: Record<string, number> = {};
@@ -280,7 +282,7 @@ export function questionStats(q: Question, responses: PreparedResponse[]): Quest
       stats.grid = { rows, cols, cells, respondents, rowTotals, colTotals };
       break;
     }
-    case 'short_text': case 'long_text': case 'email': case 'phone': case 'url': case 'time': case 'address': case 'contact': {
+    case 'short_text': case 'long_text': case 'email': case 'phone': case 'url': case 'time': case 'address': case 'contact': case 'composite': {
       stats.texts = answeredList.map((r) => {
         const v = r.byCode[q.code];
         return { responseId: r.id, text: typeof v === 'object' ? Object.values(v as object).filter(Boolean).join(', ') : String(v) };

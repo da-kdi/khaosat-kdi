@@ -3,7 +3,24 @@ import {
   type PreparedResponse, type SurveySchema,
 } from '@core/index.ts';
 
+import { isPersonal } from './pii';
+
 type Row = Record<string, unknown>;
+export interface ExportOptions { /** bỏ câu trả lời của các câu chứa dữ liệu cá nhân (và mã người tham gia) */ hidePII?: boolean }
+
+/** Bỏ dữ liệu cá nhân khỏi phản hồi trước khi xuất — dựa trên cấu trúc của chính phiên bản người trả lời đã dùng. */
+export function stripPII(rs: PreparedResponse[], versions: Record<string, SurveySchema>, current: SurveySchema): PreparedResponse[] {
+  const codes = new Set(current.sections.flatMap((s) => s.questions).filter(isPersonal).map((q) => q.code));
+  for (const v of Object.values(versions)) for (const s of v.sections) for (const q of s.questions) if (isPersonal(q)) codes.add(q.code);
+  return rs.map((r) => {
+    const schema = versions[r.versionId] ?? current;
+    const ids = new Set(schema.sections.flatMap((s) => s.questions).filter((q) => codes.has(q.code)).map((q) => q.id));
+    const answers = Object.fromEntries(Object.entries(r.answers).filter(([k]) => !ids.has(k.replace(/__other$/, ''))));
+    const byCode = Object.fromEntries(Object.entries(r.byCode).filter(([k]) => !codes.has(k)));
+    const otherByCode = Object.fromEntries(Object.entries(r.otherByCode).filter(([k]) => !codes.has(k)));
+    return { ...r, answers, byCode, otherByCode, respondentRef: null };
+  });
+}
 
 function summaryRows(schema: SurveySchema, rs: PreparedResponse[]): Row[] {
   const out: Row[] = [];
@@ -20,7 +37,8 @@ function summaryRows(schema: SurveySchema, rs: PreparedResponse[]): Row[] {
 }
 const round = (n: number, d = 4) => (Number.isFinite(n) ? Math.round(n * 10 ** d) / 10 ** d : null);
 
-export async function exportXlsx(fileBase: string, schema: SurveySchema, rs: PreparedResponse[], versions: Record<string, SurveySchema>) {
+export async function exportXlsx(fileBase: string, schema: SurveySchema, rs: PreparedResponse[], versions: Record<string, SurveySchema>, opt: ExportOptions = {}) {
+  if (opt.hidePII) rs = stripPII(rs, versions, schema);
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
   const add = (name: string, rows: Row[]) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{ note: 'Không có dữ liệu' }]), name);
@@ -32,7 +50,8 @@ export async function exportXlsx(fileBase: string, schema: SurveySchema, rs: Pre
   XLSX.writeFile(wb, `${fileBase}.xlsx`);
 }
 
-export function exportCsv(fileBase: string, kind: 'wide' | 'long' | 'choices' | 'summary', schema: SurveySchema, rs: PreparedResponse[], versions: Record<string, SurveySchema>) {
+export function exportCsv(fileBase: string, kind: 'wide' | 'long' | 'choices' | 'summary', schema: SurveySchema, rs: PreparedResponse[], versions: Record<string, SurveySchema>, opt: ExportOptions = {}) {
+  if (opt.hidePII) rs = stripPII(rs, versions, schema);
   const rows: Row[] = kind === 'wide' ? exportWide(schema, rs, versions) : kind === 'long' ? exportLong(rs, versions) : kind === 'choices' ? exportChoices(rs, versions) : summaryRows(schema, rs);
   const cols = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   const esc = (v: unknown) => (v === null || v === undefined ? '' : `"${String(v).replace(/"/g, '""')}"`);

@@ -2,6 +2,7 @@ export * from './types.ts';
 export * from './registry.ts';
 export * from './logic.ts';
 export * from './validate.ts';
+export * from './checks.ts';
 export * from './normalize.ts';
 export * from './analytics.ts';
 export * from './export.ts';
