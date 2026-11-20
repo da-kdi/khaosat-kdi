@@ -1,10 +1,10 @@
 import { createContext, useContext, useState } from 'react';
-import { Link, Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Pause, Play, Rocket, Square, Undo2, Copy, Eye, PencilLine } from 'lucide-react';
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, ExternalLink, Pause, Play, Rocket, Square, Undo2, Copy, Eye, PencilLine, Trash2 } from 'lucide-react';
 import { lintSchema, type SurveyStatus } from '@core/index.ts';
 import { api, publicSurveyUrl, type SurveyRow, type VersionRow } from '@/data';
 import { useAsync } from '@/lib/useAsync';
-import { STATUS_LABEL, STATUS_TONE, fmtDate } from '@/lib/format';
+import { DELETE_DRAFT_CONFIRM, STATUS_LABEL, STATUS_TONE, canDeleteDraft, fmtDate } from '@/lib/format';
 import { Badge, Button, ErrorBox, Modal, PageLoader, cn, useToast } from '@/components/ui';
 
 interface Ctx {
@@ -42,6 +42,7 @@ export default function SurveyLayout() {
   const [busy, setBusy] = useState('');
   const [confirmPublish, setConfirmPublish] = useState(false);
   const { pathname } = useLocation();
+  const nav = useNavigate();
 
   if (s.loading && !s.data) return <PageLoader />;
   if (s.error || !s.data) return <div className="p-8"><ErrorBox>{s.error || 'Không tìm thấy khảo sát'}</ErrorBox></div>;
@@ -57,6 +58,12 @@ export default function SurveyLayout() {
     setBusy('publish');
     try { await api.publish(survey.id); await Promise.all([s.reload(), v.reload()]); toast(`Đã xuất bản phiên bản ${(v.data?.length ?? 0) + 1}`); setConfirmPublish(false); }
     catch (e) { toast((e as Error).message, 'error'); } finally { setBusy(''); }
+  };
+  const removeDraft = async () => {
+    if (!confirm(DELETE_DRAFT_CONFIRM(survey.title))) return;
+    setBusy('delete');
+    try { await api.deleteDraft(survey.id); toast('Đã xóa bản nháp'); nav('/admin/surveys', { replace: true }); }
+    catch (e) { toast((e as Error).message, 'error'); setBusy(''); }
   };
   const onPreview = pathname.endsWith('/preview');
   const onSoan = onPreview || pathname.endsWith('/builder');
@@ -90,6 +97,7 @@ export default function SurveyLayout() {
                 {survey.status === 'paused' && <Button size="sm" variant="outline" loading={busy === 'published'} onClick={() => doStatus('published', 'Đã mở lại khảo sát')}><Play className="h-4 w-4" />Mở lại</Button>}
                 {live && <Button size="sm" variant="outline" loading={busy === 'closed'} onClick={() => confirm('Kết thúc khảo sát? Người trả lời sẽ không thể gửi thêm. Có thể mở lại sau.') && doStatus('closed', 'Đã kết thúc khảo sát')}><Square className="h-4 w-4" />Kết thúc</Button>}
                 {survey.status === 'archived' && <Button size="sm" variant="outline" loading={busy === 'draft'} onClick={() => doStatus('draft', 'Đã khôi phục về bản nháp')}><Undo2 className="h-4 w-4" />Khôi phục</Button>}
+                {canDeleteDraft(survey) && <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" loading={busy === 'delete'} onClick={removeDraft} title="Xóa vĩnh viễn bản nháp chưa xuất bản"><Trash2 className="h-4 w-4" />Xóa nháp</Button>}
                 {survey.status !== 'archived' && (survey.hasUnpublishedChanges || !survey.currentVersionId || survey.status === 'closed') && (
                   <Button size="sm" className="bg-accent-400 text-ink hover:bg-accent-300" onClick={() => setConfirmPublish(true)}><Rocket className="h-4 w-4" />{survey.currentVersionId ? (survey.status === 'closed' ? 'Mở lại & xuất bản' : `Xuất bản phiên bản ${(v.data?.length ?? 0) + 1}`) : 'Xuất bản'}</Button>
                 )}

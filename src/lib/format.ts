@@ -54,7 +54,16 @@ export const ACTION_LABEL: Record<string, string> = {
   'survey.publish': 'xuất bản phiên bản',
   'survey.status': 'đổi trạng thái',
   'survey.duplicate': 'nhân bản khảo sát',
+  'survey.delete': 'xóa bản nháp',
   'invitation.create': 'tạo lời mời',
   'invitation.revoke': 'thu hồi lời mời',
   'response.flag': 'gắn cờ phản hồi',
 };
+
+/** A draft that was never published can be deleted by its owner or an admin. */
+export function canDeleteDraft(s: { status: string; currentVersionId?: string | null; myRole?: string | null }) {
+  return s.status === 'draft' && !s.currentVersionId && (s.myRole === 'owner' || s.myRole === 'admin');
+}
+export const DELETE_DRAFT_CONFIRM = (title: string) => `Xóa vĩnh viễn bản nháp "${title}"?
+
+Toàn bộ câu hỏi đã soạn sẽ bị xóa và KHÔNG thể khôi phục.`;

@@ -4,7 +4,7 @@ import { ClipboardList, Copy, FilePlus2, FileUp, LayoutGrid, List, Plus, Search,
 import { blankSchema, cloneSchemaWithNewIds } from '@core/index.ts';
 import { api, type SurveyRow, type TemplateRow } from '@/data';
 import { useAsync } from '@/lib/useAsync';
-import { STATUS_LABEL, STATUS_TONE, fmtDate, fmtNum, fmtPct, slugify } from '@/lib/format';
+import { DELETE_DRAFT_CONFIRM, STATUS_LABEL, STATUS_TONE, canDeleteDraft, fmtDate, fmtNum, fmtPct, slugify } from '@/lib/format';
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, PageLoader, Select, Tabs, Textarea, cn, useToast } from '@/components/ui';
 import { PageHeader } from './PageHeader';
 import { ImportPanel } from './ImportPanel';
@@ -22,6 +22,11 @@ export default function SurveysPage() {
   const [view, setView] = useState<'table' | 'cards'>('table');
   const [creating, setCreating] = useState(params.get('new') === '1');
   const [dup, setDup] = useState<SurveyRow | null>(null);
+  const toast = useToast();
+  const removeDraft = async (s: SurveyRow) => {
+    if (!confirm(DELETE_DRAFT_CONFIRM(s.title))) return;
+    try { await api.deleteDraft(s.id); toast('Đã xóa bản nháp'); await surveys.reload(); } catch (e) { toast((e as Error).message, 'error'); }
+  };
 
   const list = useMemo(() => (surveys.data ?? []).filter((s) =>
     (!status || s.status === status || (status === 'closed' && s.status === 'archived')) && (!project || s.projectId === project) &&
@@ -93,8 +98,9 @@ export default function SurveysPage() {
                             : <Link to={`/admin/surveys/${s.id}/distribution`}><Button size="sm" variant="outline" className="w-full">Theo dõi</Button></Link>}
                           {draft ? <Button size="sm" variant="outline" className="w-full" disabled title="Chưa có phản hồi">Báo cáo</Button>
                             : <Link to={`/admin/surveys/${s.id}/analytics`}><Button size="sm" className="w-full">Báo cáo</Button></Link>}
-                          <Select className="h-8 px-2 text-sm" aria-label="Thao tác khác" value="" onChange={(e) => { if (e.target.value === 'dup') setDup(s); }}>
+                          <Select className="h-8 px-2 text-sm" aria-label="Thao tác khác" value="" onChange={(e) => { if (e.target.value === 'dup') setDup(s); if (e.target.value === 'del') void removeDraft(s); }}>
                             <option value="">Khác…</option><option value="dup">Nhân bản</option>
+                            {canDeleteDraft(s) && <option value="del">Xóa bản nháp</option>}
                           </Select>
                         </div>
                       </td>

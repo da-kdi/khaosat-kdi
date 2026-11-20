@@ -200,6 +200,20 @@ export const demoAdmin: AdminApi = {
     s.status = status; s.updatedAt = now();
     save(db);
   },
+  async deleteDraft(sid) {
+    const db = load();
+    const r = roleOf(db, sid);
+    if (r !== 'owner' && r !== 'admin') throw new Error('Chỉ chủ sở hữu hoặc quản trị viên được xóa khảo sát');
+    const s = db.surveys.find((x) => x.id === sid);
+    if (!s) throw new Error('Không tìm thấy khảo sát');
+    if (s.status !== 'draft' || s.currentVersionId || db.versions.some((v) => v.surveyId === sid)) throw new Error('Chỉ xóa được bản nháp chưa từng xuất bản');
+    if (db.responses.some((x) => x.surveyId === sid)) throw new Error('Khảo sát đã có phản hồi, không thể xóa');
+    audit(db, 'survey.delete', 'survey', sid, { title: s.title, slug: s.slug });
+    db.surveys = db.surveys.filter((x) => x.id !== sid);
+    db.members = db.members.filter((m) => m.surveyId !== sid);
+    db.invitations = db.invitations.filter((i) => i.surveyId !== sid);
+    save(db);
+  },
   async listVersions(sid) { return load().versions.filter((v) => v.surveyId === sid).sort((a, b) => b.versionNumber - a.versionNumber); },
 
   async listResponses(sid) {

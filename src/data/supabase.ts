@@ -111,6 +111,7 @@ export function createSupabaseApis(url: string, anonKey: string): { admin: Admin
     async duplicateSurvey(id, title, slug) { return must(await sb.rpc('duplicate_survey', { p_survey: id, p_title: title, p_slug: slug })) as string; },
     async publish(id) { return must(await sb.rpc('publish_survey', { p_survey: id })) as string; },
     async setStatus(id, status) { must(await sb.rpc('set_survey_status', { p_survey: id, p_status: status })); },
+    async deleteDraft(id) { must(await sb.rpc('delete_draft_survey', { p_survey: id })); },
     async listVersions(surveyId) {
       const rows = must(await sb.from('survey_versions').select('*').eq('survey_id', surveyId).order('version_number', { ascending: false })) as any[];
       return rows.map((v): VersionRow => ({ id: v.id, surveyId: v.survey_id, versionNumber: v.version_number, schema: v.schema_json, settings: v.settings_json, theme: v.theme_json, publishedAt: v.published_at }));

@@ -106,6 +106,8 @@ export interface AdminApi {
   duplicateSurvey(id: string, title: string, slug: string): Promise<string>;
   publish(id: string): Promise<string>;
   setStatus(id: string, status: SurveyStatus): Promise<void>;
+  /** Permanently delete a draft that was never published (owner/admin only). */
+  deleteDraft(id: string): Promise<void>;
   listVersions(surveyId: string): Promise<VersionRow[]>;
   // responses
   listResponses(surveyId: string): Promise<ResponseRecord[]>;

@@ -71,5 +71,17 @@ console.log('stranger can_view:', (await db.query(`select can_view_survey($1) v`
 try { await db.query(`select publish_survey($1)`, [s.id]); console.log('✗ stranger published'); process.exit(1); } catch (e) { console.log('✓ stranger publish blocked:', e.message); }
 await as(U1);
 console.log('admin can_edit:', (await db.query(`select can_edit_survey($1) v`, [s.id])).rows[0].v);
+// delete draft: published survey refused; never-published draft removed with its members
+try { await db.query(`select delete_draft_survey($1)`, [s.id]); console.log('✗ published survey deleted'); process.exit(1); } catch (e) { console.log('✓ delete published blocked:', e.message); }
+await as(U2);
+const { rows: [d] } = await db.query(`insert into surveys(title, slug, owner_id, draft_schema) values ('Nháp','nhap-xoa',$1,'{"sections":[]}'::jsonb) returning id`, [U2]);
+await as('33333333-3333-3333-3333-333333333333');
+try { await db.query(`select delete_draft_survey($1)`, [d.id]); console.log('✗ stranger deleted'); process.exit(1); } catch (e) { console.log('✓ stranger delete blocked:', e.message); }
+await as(U2);
+await db.query(`select delete_draft_survey($1)`, [d.id]);
+const left = (await db.query(`select (select count(*) from surveys where id=$1)::int s, (select count(*) from survey_members where survey_id=$1)::int m`, [d.id])).rows[0];
+if (left.s || left.m) { console.log('✗ draft not removed', left); process.exit(1); }
+console.log('✓ draft deleted');
+await as(U1);
 console.log('audit entries:', (await db.query(`select action from audit_logs order by id`)).rows.map((x) => x.action).join(', '));
 console.log('\nALL MIGRATION CHECKS PASSED');
